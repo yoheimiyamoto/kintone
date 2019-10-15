@@ -63,7 +63,7 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		case FieldTypeSingleSelect:
 			var _f SingleSelectField
 			err = json.Unmarshal(*raw.Value, &_f)
-			f = &_f
+			f = _f
 		case FieldTypeStatus:
 			var _f StatusField
 			err = json.Unmarshal(*raw.Value, &_f)
@@ -83,19 +83,19 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		case FieldTypeNumber:
 			var _f NumberField
 			err = json.Unmarshal(*raw.Value, &_f)
-			f = &_f
+			f = _f
 		case FieldTypeCheckBox:
 			var _f CheckBoxField
 			err = json.Unmarshal(*raw.Value, &_f)
-			f = &_f
+			f = _f
 		case FieldTypeMultiSelect:
 			var _f MultiSelectField
 			err = json.Unmarshal(*raw.Value, &_f)
-			f = &_f
+			f = _f
 		case FieldTypeFile:
 			var _f FileField
 			err = json.Unmarshal(*raw.Value, &_f)
-			f = &_f
+			f = _f
 		case FieldTypeDate:
 			var _f DateField
 			err = json.Unmarshal(*raw.Value, &_f)
@@ -115,7 +115,7 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		case FieldTypeCreator, FieldTypeModifier:
 			var _f UserField
 			err = json.Unmarshal(*raw.Value, &_f)
-			f = &_f
+			f = _f
 		case FieldTypeOrganization:
 			var _f OrganizationsField
 			err = json.Unmarshal(*raw.Value, &_f)
