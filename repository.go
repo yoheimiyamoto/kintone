@@ -28,7 +28,11 @@ func NewRepository(subdomain string, username, password string, httpClient *http
 }
 
 // ReadRecords ...
-func (repo *Repository) ReadRecords(q *Query) ([]*Record, error) {
+func (repo *Repository) ReadRecords(ctx context.Context, q *Query) ([]*Record, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	// レコード数確認
 	totalCount, err := repo.readTotalCount(q)
 	if err != nil {
@@ -39,7 +43,7 @@ func (repo *Repository) ReadRecords(q *Query) ([]*Record, error) {
 
 	q.RawQuery.Limit = 500
 
-	eg, ctx := errgroup.WithContext(context.Background())
+	eg, ctx := errgroup.WithContext(ctx)
 	for i := 0; i < totalCount; i += 500 {
 
 		// クエリ生成（コピー）
@@ -124,11 +128,15 @@ func (repo *Repository) readTotalCount(q *Query) (int, error) {
 
 // AddRecords ...
 func (repo *Repository) AddRecords(ctx context.Context, appID string, rs []*Record) ([]string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	sliced := sliceRecords(rs, 100)
 
 	var ids []string
 
-	eg, ctx := errgroup.WithContext(context.Background())
+	eg, ctx := errgroup.WithContext(ctx)
 	for _, _rs := range sliced {
 		_rs := _rs
 		eg.Go(func() error {
@@ -198,10 +206,14 @@ func (repo *Repository) addRecords(ctx context.Context, appID string, rs []*Reco
 //+UpdateRecords
 
 // UpdateRecords ...
-func (repo *Repository) UpdateRecords(ctx context.Context, appID string, rs []*Record, updateKey string) error {
+func (repo *Repository) UpdateRecords(ctx context.Context, appID string, updateKey string, rs ...*Record) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	sliced := sliceRecords(rs, 100)
 
-	eg, ctx := errgroup.WithContext(context.Background())
+	eg, ctx := errgroup.WithContext(ctx)
 	for _, _rs := range sliced {
 		_rs := _rs
 		eg.Go(func() error {
@@ -282,9 +294,13 @@ func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*R
 
 // DeleteRecords ...
 func (repo *Repository) DeleteRecords(ctx context.Context, appID int, ids []string) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	sliced := sliceIDs(ids, 100)
 
-	eg, ctx := errgroup.WithContext(context.Background())
+	eg, ctx := errgroup.WithContext(ctx)
 	for _, _ids := range sliced {
 		_ids := _ids
 		eg.Go(func() error {
