@@ -18,8 +18,21 @@ type Repository struct {
 	Token  chan struct{}
 }
 
+type RepositoryOption struct {
+	HTTPClient    *http.Client
+	MaxConcurrent int
+}
+
 // NewRepository ...
-func NewRepository(subdomain string, username, password string, httpClient *http.Client, maxConcurrent int) *Repository {
+func NewRepository(subdomain string, username, password string, option *RepositoryOption) *Repository {
+	var httpClient *http.Client
+	maxConcurrent := 1
+
+	if option != nil {
+		httpClient = option.HTTPClient
+		maxConcurrent = option.MaxConcurrent
+	}
+
 	c := newClient(subdomain, username, password, httpClient)
 	token := make(chan struct{}, maxConcurrent)
 	u, _ := url.ParseRequestURI(fmt.Sprintf(APIEndpointBase, subdomain))

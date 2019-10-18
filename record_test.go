@@ -6,7 +6,6 @@ import (
 )
 
 func TestUnmarshalRecord(t *testing.T) {
-
 	r := Record{}
 	data := []byte(`
 		{

@@ -17,11 +17,8 @@ func init() {
 }
 
 func TestRead(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil, 1)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	q := &Query{AppID: "670", RawQuery: &RawQuery{Condition: `name="world"`}, Fields: []string{"name", "日付"}}
-	// q := &Query{AppID: 670, RawQuery: &RawQuery{Condition: ``}, Fields: []string{"name", "日付"}}
-	// q := &Query{AppID: 670, RawQuery: &RawQuery{Condition: ``}}
-
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
 		t.Error(err)
@@ -31,7 +28,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil, 1)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	var rs []*Record
 	for i := 0; i < 1; i++ {
 		rs = append(rs, &Record{Fields: Fields{
@@ -57,7 +54,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil, 1)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	rs := []*Record{&Record{ID: "1662", Fields: Fields{"name": SingleLineTextField("world")}}}
 	err := repo.UpdateRecords(nil, "670", "", rs...)
 	if err != nil {
@@ -67,7 +64,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestReadAndUpdate(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil, 1)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 
 	q := &Query{AppID: "688", RawQuery: &RawQuery{Condition: `レコード番号="3145"`}}
 
@@ -95,7 +92,7 @@ func TestReadAndUpdate(t *testing.T) {
 }
 
 func TestUpdateWithKey(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil, 1)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	rs := []*Record{&Record{ID: "1662", Fields: Fields{"id": SingleLineTextField("100"), "name": SingleLineTextField("world!!")}}}
 	err := repo.UpdateRecords(nil, "670", "id", rs...)
 	if err != nil {
@@ -105,7 +102,7 @@ func TestUpdateWithKey(t *testing.T) {
 }
 
 func TestReadFormFields(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil, 1)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	fs, err := repo.ReadFormFields("688")
 	if err != nil {
 		t.Error(err)
@@ -115,7 +112,7 @@ func TestReadFormFields(t *testing.T) {
 }
 
 func TestBulkAdds(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil, 90)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 90})
 	var rs []*Record
 
 	for i := 1000000; i < 2000000; i++ {

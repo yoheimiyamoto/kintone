@@ -2,6 +2,7 @@ package kintone
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -96,10 +97,31 @@ type CalcField string
 // RevisionField ...
 type RevisionField string
 
-// NumberField ...
-type NumberField string
-
 //-String
+
+//+NumberField ...
+type NumberField int64
+
+func (f *NumberField) UnmarshalJSON(data []byte) error {
+	var raw string
+	err := json.Unmarshal(data, &raw)
+	if err != nil {
+		return err
+	}
+	i, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return err
+	}
+	*f = NumberField(i)
+	return nil
+}
+
+func (f NumberField) MarshalJSON() ([]byte, error) {
+	s := strconv.FormatInt(int64(f), 10)
+	return json.Marshal(s)
+}
+
+//-NumberField ...
 
 //+TextsField
 
