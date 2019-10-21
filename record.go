@@ -62,7 +62,10 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 			f = _f
 		case FieldTypeSingleSelect:
 			var _f SingleSelectField
-			err = json.Unmarshal(*raw.Value, &_f)
+			// valueの値としてnullが入ってくる可能性があるため以下のハンドリングが必要
+			if raw.Value != nil {
+				err = json.Unmarshal(*raw.Value, &_f)
+			}
 			f = _f
 		case FieldTypeStatus:
 			var _f StatusField
@@ -98,11 +101,17 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 			f = _f
 		case FieldTypeDate:
 			var _f DateField
-			err = json.Unmarshal(*raw.Value, &_f)
+			// valueの値としてnullが入ってくる可能性があるため以下のハンドリングが必要
+			if raw.Value != nil {
+				err = json.Unmarshal(*raw.Value, &_f)
+			}
 			f = _f
 		case FieldTypeDateTime, FieldTypeCreatedDateTime, FieldTypeUpdatedDateTime:
 			var _f DateTimeField
-			err = json.Unmarshal(*raw.Value, &_f)
+			// valueの値としてnullが入ってくる可能性があるため以下のハンドリングが必要
+			if raw.Value != nil {
+				err = json.Unmarshal(*raw.Value, &_f)
+			}
 			f = _f
 		case FieldTypeTime:
 			var _f TimeField
