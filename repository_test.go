@@ -18,13 +18,25 @@ func init() {
 
 func TestRead(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
-	q := &Query{AppID: "670", RawQuery: &RawQuery{Condition: `name="world"`}, Fields: []string{"name", "日付"}}
+	q := &Query{AppID: "670", Condition: `name="world"`, Fields: []string{"name", "日付"}}
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	t.Log(len(rs))
+}
+
+func TestReadWithOrderBy(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	q := &Query{AppID: "688", OrderBy: "グループ名 desc", Fields: []string{"name", "グループ名", "日付"}}
+	rs, err := repo.ReadRecords(nil, q)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log(len(rs))
+	t.Logf("%v", rs[0])
 }
 
 func TestAdd(t *testing.T) {
@@ -66,7 +78,7 @@ func TestUpdate(t *testing.T) {
 func TestReadAndUpdate(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 
-	q := &Query{AppID: "688", RawQuery: &RawQuery{Condition: `レコード番号="3145"`}}
+	q := &Query{AppID: "688", Condition: `レコード番号="3145"`}
 
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
@@ -115,23 +127,15 @@ func TestBulkAdds(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 90})
 	var rs []*Record
 
-	for i := 1000000; i < 2000000; i++ {
+	for i := 0; i < 1000; i++ {
 		code := fmt.Sprintf("code_%d", i)
-		name := fmt.Sprintf("name_%d", i)
 		fs := Fields{
-			"company_cd":        SingleLineTextField(code),
-			"company_name":      SingleLineTextField(name),
-			"company_name_kana": SingleLineTextField("hello"),
-			"tel":               SingleLineTextField("03-1111-111"),
-			"jigyo":             SingleLineTextField("hello"),
-			"tantou":            SingleLineTextField("hello"),
-			"tantou_kana":       SingleLineTextField("hello"),
-			"temp_regist":       CheckBoxField([]string{"仮登録"}),
+			"グループ名": SingleLineTextField(code),
 		}
 		rs = append(rs, &Record{Fields: fs})
 	}
 
-	_, err := repo.AddRecords(nil, "95", rs)
+	_, err := repo.AddRecords(nil, "688", rs)
 	if err != nil {
 		t.Error(err)
 	}

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -54,16 +53,14 @@ func (repo *Repository) ReadRecords(ctx context.Context, q *Query) ([]*Record, e
 
 	recordsCh := make(chan *Record, totalCount)
 
-	q.RawQuery.Limit = 500
+	q.limit = 500
 
 	eg, ctx := errgroup.WithContext(ctx)
 	for i := 0; i < totalCount; i += 500 {
 
 		// クエリ生成（コピー）
 		q := *q
-		raw := *q.RawQuery
-		raw.Offset = i
-		q.RawQuery = &raw
+		q.offset = i
 		eg.Go(func() error {
 			_rs, err := repo.read500Records(ctx, &q)
 			if err != nil {
@@ -414,43 +411,40 @@ func (repo *Repository) ReadFormLayout(appID string) (FormLayouts, error) {
 
 //+query
 
-// type Query string
-
 // Query ...
 type Query struct {
-	AppID      string
-	RawQuery   *RawQuery
+	AppID string
+
+	Condition string
+	OrderBy   string
+	limit     int
+	offset    int
+
 	Fields     []string
 	TotalCount bool
 }
 
-// RawQuery ...
-type RawQuery struct {
-	Condition string
-	OrderBy   string
-	Limit     int
-	Offset    int
-}
-
-func (r RawQuery) String() string {
-	str := r.Condition
-	if r.OrderBy != "" {
-		str = fmt.Sprintf("%s offset %s", str, r.OrderBy)
-	}
-	if r.Limit != 0 {
-		str = fmt.Sprintf("%s limit %d", str, r.Limit)
-	}
-	if r.Offset != 0 {
-		str = fmt.Sprintf("%s offset %d", str, r.Offset)
-	}
-	return strings.TrimSpace(str)
-}
-
 func (q Query) String() string {
 	str := fmt.Sprintf("app=%s", q.AppID)
-	if q.RawQuery != nil {
-		str = fmt.Sprintf("%s&query=%s", str, q.RawQuery)
+
+	//+query parameter
+	query := q.Condition
+
+	if q.OrderBy != "" {
+		query = fmt.Sprintf("%s order by %s", query, q.OrderBy)
 	}
+	if q.limit != 0 {
+		query = fmt.Sprintf("%s limit %d", query, q.limit)
+	}
+	if q.offset != 0 {
+		query = fmt.Sprintf("%s offset %d", query, q.offset)
+	}
+
+	if query != "" {
+		str = fmt.Sprintf("%s&query=%s", str, query)
+	}
+	//-query parameter
+
 	if q.TotalCount {
 		str = fmt.Sprintf("%s&totalCount=true", str)
 	}
