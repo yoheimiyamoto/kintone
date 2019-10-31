@@ -125,21 +125,35 @@ func (f NumberField) MarshalJSON() ([]byte, error) {
 
 //+TextsField
 
-// TextsField ...
-type TextsField []string
+// CheckBoxField ...
+type CheckBoxField []string
 
-func (f TextsField) String() string {
+func (f CheckBoxField) String() string {
+	if len(f) == 0 {
+		return ""
+	}
 	return strings.Join([]string(f), ",")
 }
 
-// CheckBoxField ...
-type CheckBoxField TextsField
-
 // MultiSelectField ...
-type MultiSelectField TextsField
+type MultiSelectField []string
+
+func (f MultiSelectField) String() string {
+	if len(f) == 0 {
+		return ""
+	}
+	return strings.Join([]string(f), ",")
+}
 
 // CategoryField ...
-type CategoryField TextsField
+type CategoryField []string
+
+func (f CategoryField) String() string {
+	if len(f) == 0 {
+		return ""
+	}
+	return strings.Join([]string(f), ",")
+}
 
 //-TextsField
 
