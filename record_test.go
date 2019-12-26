@@ -2,6 +2,7 @@ package kintone
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -290,4 +291,144 @@ func TestUnmarshalRecord(t *testing.T) {
 	if !jsonEqual(expected, actual) {
 		t.Errorf("error: expected: %s, actual: %s", string(expected), string(actual))
 	}
+}
+
+func TestSingleSelectFieldMarshal(t *testing.T) {
+	f := SingleSelectField{}
+	data, err := json.Marshal(&f)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	expected := "null"
+	actual := string(data)
+
+	if expected != actual {
+		t.Errorf("expected: %s, actual: %s", expected, actual)
+		return
+	}
+
+	f = NewSingleSelectField("hello")
+	data, err = json.Marshal(&f)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	expected = "\"hello\""
+	actual = string(data)
+
+	if expected != actual {
+		t.Errorf("expected: %s, actual: %s", expected, actual)
+		return
+	}
+}
+
+func TestSingleSelectFieldUnMarshal(t *testing.T) {
+	//+valueに値が入っている場合
+	data := []byte(`{
+		"ドロップダウン": {
+			"type": "DROP_DOWN",
+			"value": "hello"
+
+		}
+	}`)
+	var record Record
+	err := json.Unmarshal(data, &record)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	actual := fmt.Sprint(record.Fields["ドロップダウン"])
+	expected := "hello"
+
+	if expected != actual {
+		t.Errorf("expected: %s, actual: %s", expected, actual)
+		return
+	}
+	//-valueに値が入っている場合
+
+	//+valueの値がnullの場合
+	data = []byte(`{
+		"ドロップダウン": {
+			"type": "DROP_DOWN",
+			"value": null
+
+		}
+	}`)
+
+	err = json.Unmarshal(data, &record)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	actual = fmt.Sprint(record.Fields["ドロップダウン"])
+	expected = ""
+
+	if expected != actual {
+		t.Errorf("expected: %s, actual: %s", expected, actual)
+		return
+	}
+	//-valueの値がnullの場合
+}
+
+func TestDateFieldMarshal(t *testing.T) {
+	//+valueに値が入っている場合
+	f := NewDateField(2020, 1, 1)
+	data, err := json.Marshal(f)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	expected := "\"2020-01-01\""
+	actual := string(data)
+
+	if expected != actual {
+		t.Errorf("expected: %s, actual: %s", expected, actual)
+		return
+	}
+	//-valueに値が入っている場合
+
+	//+valueがnullの場合
+	f = &DateField{nil}
+	data, err = json.Marshal(f)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	expected = "null"
+	actual = string(data)
+
+	if expected != actual {
+		t.Errorf("expected: %s, actual: %s", expected, actual)
+		return
+	}
+	//-valueがnullの場合
+}
+
+func TestDateFieldUnMarshal(t *testing.T) {
+	data := []byte(`{
+		"日付": {
+			"type": "DATE",
+			"value": null
+		}
+	}`)
+	var record Record
+	err := json.Unmarshal(data, &record)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if v, ok := record.Fields["日付"].(DateField); ok {
+		if v.Value == nil {
+			t.Log("nil!")
+		}
+	}
+	// t.Log(record)
 }

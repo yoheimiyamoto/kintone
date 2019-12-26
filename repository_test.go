@@ -47,7 +47,7 @@ func TestAdd(t *testing.T) {
 			"グループ名":     SingleLineTextField(fmt.Sprintf("hello%d", i)),
 			"文字列__複数行_": MultiLineTextField("hello world!"),
 			"チェックボックス":  CheckBoxField([]string{"sample1"}),
-			"ドロップダウン":   SingleSelectField("sample1"),
+			"ドロップダウン":   NewSingleSelectField("sample1"),
 			"複数選択":      MultiSelectField([]string{"sample1", "sample2"}),
 			"ユーザー選択":    UsersField{&CodeField{Code: "yoheimiyamoto"}},
 			"日付":        NewDateField(2011, 1, 1),

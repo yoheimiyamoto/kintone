@@ -2,6 +2,7 @@ package kintone
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -77,7 +78,39 @@ type RichTextField string
 type RadioButtonField string
 
 // SingleSelectField ...
-type SingleSelectField string
+type SingleSelectField struct {
+	Value interface{} // string or nil
+}
+
+func NewSingleSelectField(str string) SingleSelectField {
+	return SingleSelectField{str}
+}
+
+// UnmarshalJSON ...
+func (f *SingleSelectField) UnmarshalJSON(data []byte) error {
+	var v string
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		return err
+	}
+	*f = SingleSelectField{v}
+	return nil
+}
+
+// MarshalJSON ...
+func (f SingleSelectField) MarshalJSON() ([]byte, error) {
+	if f.Value != nil {
+		return json.Marshal(f.String())
+	}
+	return json.Marshal(f.Value)
+}
+
+func (f SingleSelectField) String() string {
+	if f.Value == nil {
+		return ""
+	}
+	return fmt.Sprint(f.Value)
+}
 
 // LinkField ...
 type LinkField string
@@ -160,10 +193,25 @@ func (f CategoryField) String() string {
 //+DateField
 
 // DateField ...
-type DateField time.Time
+type DateField struct {
+	Value interface{} // nil or time.Time
+}
 
-func (f DateField) String() string {
-	return time.Time(f).Format("2006-01-02")
+// NewDateField ...
+func NewDateField(year, month, day int) *DateField {
+	t := DateField{time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)}
+	return &t
+}
+
+func (f DateField) Time() (time.Time, error) {
+	var t time.Time
+	if f.Value == nil {
+		return t, fmt.Errorf("value is nil")
+	}
+	if t, ok := f.Value.(time.Time); ok {
+		return t, nil
+	}
+	return t, fmt.Errorf("value is invalid")
 }
 
 // UnmarshalJSON ...
@@ -176,19 +224,23 @@ func (f *DateField) UnmarshalJSON(data []byte) error {
 
 	t, _ := time.Parse("2006-01-02", v)
 
-	*f = DateField(t)
+	*f = DateField{t}
 	return nil
 }
 
 // MarshalJSON ...
 func (f DateField) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.String())
+	if f.Value != nil {
+		return json.Marshal(f.String())
+	}
+	return json.Marshal(f.Value)
 }
 
-// NewDateField ...
-func NewDateField(year, month, day int) *DateField {
-	t := DateField(time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC))
-	return &t
+func (f DateField) String() string {
+	if v, ok := f.Value.(time.Time); ok {
+		return v.Format("2006-01-02")
+	}
+	return ""
 }
 
 //-DateField
