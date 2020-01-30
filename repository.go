@@ -104,6 +104,7 @@ func (repo *Repository) read500Records(ctx context.Context, q *Query) ([]*Record
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("body: %s", string(body))
 
 	r := struct {
 		Records []*Record `json:"records"`
