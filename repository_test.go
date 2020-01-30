@@ -1,6 +1,7 @@
 package kintone
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -57,7 +58,7 @@ func TestAdd(t *testing.T) {
 			}}}),
 		}})
 	}
-	ids, err := repo.AddRecords(nil, "688", rs)
+	ids, err := repo.AddRecords(nil, "688", rs...)
 	if err != nil {
 		t.Error(err)
 		return
@@ -67,7 +68,9 @@ func TestAdd(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
-	rs := []*Record{&Record{ID: "1662", Fields: Fields{"name": SingleLineTextField("world")}}}
+	rs := []*Record{
+		&Record{ID: "1662", Fields: Fields{"name": SingleLineTextField("world")}},
+	}
 	err := repo.UpdateRecords(nil, "670", "", rs...)
 	if err != nil {
 		t.Error(err)
@@ -135,7 +138,21 @@ func TestBulkAdds(t *testing.T) {
 		rs = append(rs, &Record{Fields: fs})
 	}
 
-	_, err := repo.AddRecords(nil, "688", rs)
+	_, err := repo.AddRecords(nil, "688", rs...)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestUpsertRecords(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	rs := []*Record{
+		&Record{ID: "", Fields: Fields{"キー": SingleLineTextField("world"), "グループ名": SingleLineTextField("world!!")}},
+		&Record{ID: "", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
+		// &Record{ID: "4148", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
+		// &Record{ID: "4147", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
+	}
+	err := repo.UpsertRecords(context.Background(), "688", "キー", rs...)
 	if err != nil {
 		t.Error(err)
 	}

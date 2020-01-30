@@ -85,7 +85,6 @@ func newClient(subdomain string, username, password string, httpClient *http.Cli
 
 	u, _ := url.ParseRequestURI(fmt.Sprintf(APIEndpointBase, subdomain))
 	c.endpointBase = u
-
 	c.apiToken = base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
 
 	return &c

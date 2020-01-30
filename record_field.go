@@ -141,6 +141,12 @@ func (f *NumberField) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+
+	// ブランクの場合は0を返す
+	if raw == "" {
+		return nil
+	}
+
 	i, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil {
 		return err

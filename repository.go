@@ -3,11 +3,12 @@ package kintone
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -137,7 +138,7 @@ func (repo *Repository) readTotalCount(q *Query) (int, error) {
 //+AddRecord
 
 // AddRecords ...
-func (repo *Repository) AddRecords(ctx context.Context, appID string, rs []*Record) ([]string, error) {
+func (repo *Repository) AddRecords(ctx context.Context, appID string, rs ...*Record) ([]string, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -241,7 +242,19 @@ func (repo *Repository) UpdateRecords(ctx context.Context, appID string, updateK
 }
 
 // 100レコードづつUpdate
-func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*Record, updateKeyCode string) error {
+func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*Record, updateKey string) error {
+	if appID == "" {
+		return errors.New("appID is required")
+	}
+
+	if updateKey == "" {
+		return errors.New("updateKey is required")
+	}
+
+	if len(rs) == 0 {
+		return nil
+	}
+
 	select {
 	case repo.Token <- struct{}{}: // acquire token
 		defer func() {
@@ -276,12 +289,12 @@ func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*R
 	records := make([]UpdateRecord, len(rs))
 
 	for i, r := range rs {
-		if updateKeyCode == "" {
+		if updateKey == "" {
 			records[i] = &UpdateRecordWithID{r.ID, r.Fields}
 		} else {
-			updateKey := UpdateKey{Field: updateKeyCode, Value: fmt.Sprint(r.Fields[updateKeyCode])}
-			delete(r.Fields, updateKeyCode)
-			records[i] = &UpdateRecordWithUpdateKey{updateKey, r.Fields}
+			u := UpdateKey{Field: updateKey, Value: fmt.Sprint(r.Fields[updateKey])}
+			delete(r.Fields, updateKey)
+			records[i] = &UpdateRecordWithUpdateKey{u, r.Fields}
 		}
 	}
 
@@ -306,6 +319,24 @@ func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*R
 func (repo *Repository) DeleteRecords(ctx context.Context, appID int, ids []string) error {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+
+	sliceIDs := func(ids []string, i int) [][]string {
+		out := make([][]string, 0)
+		for {
+			if len(ids) > i {
+				out = append(out, ids[:i])
+			} else {
+				out = append(out, ids)
+			}
+
+			if len(ids) > i {
+				ids = ids[i:]
+			} else {
+				break
+			}
+		}
+		return out
 	}
 
 	sliced := sliceIDs(ids, 100)
@@ -356,25 +387,110 @@ func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []stri
 	return nil
 }
 
-func sliceIDs(ids []string, i int) [][]string {
-	out := make([][]string, 0)
-	for {
-		if len(ids) > i {
-			out = append(out, ids[:i])
-		} else {
-			out = append(out, ids)
-		}
+//-DeleteRecords
 
-		if len(ids) > i {
-			ids = ids[i:]
-		} else {
-			break
-		}
+//+UpsertRecords
+func (repo *Repository) UpsertRecords(ctx context.Context, appID string, updateKey string, rs ...*Record) error {
+	sliced := sliceRecords(rs, 100)
+
+	eg, ctx := errgroup.WithContext(ctx)
+	for _, _rs := range sliced {
+		_rs := _rs
+		eg.Go(func() error {
+			return func() error {
+				err := repo.upsertRecords(ctx, appID, updateKey, _rs...)
+				if err != nil {
+					return err
+				}
+				return nil
+			}()
+		})
 	}
-	return out
+
+	return eg.Wait()
 }
 
-//-DeleteRecords
+// 100レコードづつUpsert
+func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateKey string, rs ...*Record) error {
+	if appID == "" {
+		return errors.New("appID is required")
+	}
+
+	if updateKey == "" {
+		return errors.New("update key is required")
+	}
+
+	if len(rs) == 0 {
+		return nil
+	}
+
+	//+新規レコードと既存レコードに分類
+
+	//+condition
+	var condition string
+	for i, r := range rs {
+		id := fmt.Sprint(r.Fields[updateKey])
+		if i == 0 {
+			condition = fmt.Sprintf(`%s="%s"`, updateKey, id)
+			continue
+		}
+		condition = fmt.Sprintf(`%s or %s="%s"`, condition, updateKey, id)
+	}
+	log.Printf("condition: %s", condition)
+	//-condition
+
+	q := &Query{AppID: appID, Condition: condition}
+	_rs, err := repo.ReadRecords(ctx, q)
+	if err != nil {
+		return err
+	}
+
+	existKeys := make([]string, len(_rs))
+	for i, r := range _rs {
+		existKeys[i] = fmt.Sprint(r.Fields[updateKey])
+	}
+	log.Printf("existKeys: %v", existKeys)
+
+	var addRecords []*Record
+	var updateRecords []*Record
+
+	// 既存のIDかどうかの判定
+	isExistID := func(id string) bool {
+		for _, k := range existKeys {
+			if id == k {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, r := range rs {
+		if isExistID(fmt.Sprint(r.Fields[updateKey])) {
+			updateRecords = append(updateRecords, r)
+			continue
+		}
+		addRecords = append(addRecords, r)
+	}
+
+	log.Printf("add %d records", len(addRecords))
+	log.Printf("update %d records", len(updateRecords))
+
+	//-新規レコードと既存レコードに分類
+
+	_, err = repo.AddRecords(ctx, appID, addRecords...)
+	if err != nil {
+		return errors.Wrap(err, "add records failed")
+	}
+
+	err = repo.UpdateRecords(ctx, appID, updateKey, updateRecords...)
+	if err != nil {
+		return errors.Wrap(err, "update records failed")
+	}
+
+	return nil
+}
+
+//-UpsertRecords
 
 // ReadFormFields ...
 func (repo *Repository) ReadFormFields(appID string) (FormFields, error) {
@@ -422,6 +538,10 @@ type Query struct {
 
 	Fields     []string
 	TotalCount bool
+}
+
+func NewQuery(appID string) *Query {
+	return &Query{AppID: appID}
 }
 
 func (q Query) String() string {
