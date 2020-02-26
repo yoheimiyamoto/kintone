@@ -54,7 +54,10 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 			f = _f
 		case FieldTypeRadioButton:
 			var _f RadioButtonField
-			err = json.Unmarshal(*raw.Value, &_f)
+			// valueの値としてnullが入ってくる可能性があるため以下のハンドリングが必要
+			if raw.Value != nil {
+				err = json.Unmarshal(*raw.Value, &_f)
+			}
 			f = _f
 		case FieldTypeLink:
 			var _f LinkField
@@ -115,7 +118,10 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 			f = _f
 		case FieldTypeTime:
 			var _f TimeField
-			err = json.Unmarshal(*raw.Value, &_f)
+			// valueの値としてnullが入ってくる可能性があるため以下のハンドリングが必要
+			if raw.Value != nil {
+				err = json.Unmarshal(*raw.Value, &_f)
+			}
 			f = _f
 		case FieldTypeUsers, FieldTypeAssignee:
 			var _f UsersField

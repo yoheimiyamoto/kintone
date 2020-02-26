@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -104,7 +103,6 @@ func (repo *Repository) read500Records(ctx context.Context, q *Query) ([]*Record
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("body: %s", string(body))
 
 	r := struct {
 		Records []*Record `json:"records"`
@@ -437,7 +435,6 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 		}
 		condition = fmt.Sprintf(`%s or %s="%s"`, condition, updateKey, id)
 	}
-	log.Printf("condition: %s", condition)
 	//-condition
 
 	q := &Query{AppID: appID, Condition: condition}
@@ -450,7 +447,6 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 	for i, r := range _rs {
 		existKeys[i] = fmt.Sprint(r.Fields[updateKey])
 	}
-	log.Printf("existKeys: %v", existKeys)
 
 	var addRecords []*Record
 	var updateRecords []*Record
@@ -472,10 +468,6 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 		}
 		addRecords = append(addRecords, r)
 	}
-
-	log.Printf("add %d records", len(addRecords))
-	log.Printf("update %d records", len(updateRecords))
-
 	//-新規レコードと既存レコードに分類
 
 	_, err = repo.AddRecords(ctx, appID, addRecords...)
