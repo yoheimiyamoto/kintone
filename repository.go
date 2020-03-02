@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -389,6 +388,9 @@ func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []stri
 func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
 	//+existKeys
 	q := &Query{AppID: appID, Condition: "", Fields: []string{"レコード番号"}}
+	if updateKey != "" {
+		q.Fields = []string{updateKey}
+	}
 	_rs, err := repo.ReadRecords(ctx, q)
 	if err != nil {
 		return err
@@ -402,8 +404,6 @@ func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		existKeys[i] = key
 	}
-
-	log.Printf("%d exist keys", len(existKeys))
 	//-existKeys
 
 	sliced := sliceRecords(rs, 100)
@@ -453,6 +453,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		id := r.ID
 		if updateKey != "" {
 			id = fmt.Sprint(r.Fields[updateKey])
+			delete(r.Fields, "updateKey")
 		}
 		if isExistID(id) {
 			updateRecords = append(updateRecords, r)
