@@ -138,7 +138,7 @@ func (repo *Repository) readTotalCount(q *Query) (int, error) {
 //+AddRecord
 
 // AddRecords ...
-func (repo *Repository) AddRecords(ctx context.Context, appID string, rs ...*Record) ([]string, error) {
+func (repo *Repository) AddRecords(ctx context.Context, appID int, rs ...*Record) ([]string, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -170,7 +170,7 @@ func (repo *Repository) AddRecords(ctx context.Context, appID string, rs ...*Rec
 	return ids, nil
 }
 
-func (repo *Repository) addRecords(ctx context.Context, appID string, rs []*Record) ([]string, error) {
+func (repo *Repository) addRecords(ctx context.Context, appID int, rs []*Record) ([]string, error) {
 	select {
 	case repo.Token <- struct{}{}: // acquire token
 		defer func() {
@@ -181,7 +181,7 @@ func (repo *Repository) addRecords(ctx context.Context, appID string, rs []*Reco
 	}
 
 	type requestBody struct {
-		App     string   `json:"app"`
+		App     int      `json:"app"`
 		Records []Fields `json:"records"`
 	}
 
@@ -217,7 +217,7 @@ func (repo *Repository) addRecords(ctx context.Context, appID string, rs []*Reco
 //+UpdateRecords
 
 // UpdateRecords ...
-func (repo *Repository) UpdateRecords(ctx context.Context, appID string, updateKey string, rs ...*Record) error {
+func (repo *Repository) UpdateRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -242,8 +242,8 @@ func (repo *Repository) UpdateRecords(ctx context.Context, appID string, updateK
 }
 
 // 100レコードづつUpdate
-func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*Record, updateKey string) error {
-	if appID == "" {
+func (repo *Repository) updateRecords(ctx context.Context, appID int, rs []*Record, updateKey string) error {
+	if appID == 0 {
 		return errors.New("appID is required")
 	}
 
@@ -278,7 +278,7 @@ func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*R
 	}
 
 	type requestBody struct {
-		App     string         `json:"app"`
+		App     int            `json:"app"`
 		Records []UpdateRecord `json:"records"`
 	}
 
@@ -386,7 +386,7 @@ func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []stri
 //-DeleteRecords
 
 //+UpsertRecords
-func (repo *Repository) UpsertRecords(ctx context.Context, appID string, updateKey string, rs ...*Record) error {
+func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
 	//+existKeys
 	q := &Query{AppID: appID, Condition: "", Fields: []string{"レコード番号"}}
 	_rs, err := repo.ReadRecords(ctx, q)
@@ -426,8 +426,8 @@ func (repo *Repository) UpsertRecords(ctx context.Context, appID string, updateK
 }
 
 // 100レコードづつUpsert
-func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateKey string, existKeys []string, rs ...*Record) error {
-	if appID == "" {
+func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey string, existKeys []string, rs ...*Record) error {
+	if appID == 0 {
 		return errors.New("appID is required")
 	}
 
@@ -478,7 +478,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 //-UpsertRecords
 
 // ReadFormFields ...
-func (repo *Repository) ReadFormFields(appID string) (FormFields, error) {
+func (repo *Repository) ReadFormFields(appID int) (FormFields, error) {
 	data, err := repo.Client.get(APIEndpointFormField, &Query{AppID: appID})
 	if err != nil {
 		return nil, err
@@ -494,7 +494,7 @@ func (repo *Repository) ReadFormFields(appID string) (FormFields, error) {
 }
 
 // ReadFormLayout ...
-func (repo *Repository) ReadFormLayout(appID string) (FormLayouts, error) {
+func (repo *Repository) ReadFormLayout(appID int) (FormLayouts, error) {
 	data, err := repo.Client.get(APIEndpointFormLayout, &Query{AppID: appID})
 	if err != nil {
 		return nil, err
@@ -514,7 +514,7 @@ func (repo *Repository) ReadFormLayout(appID string) (FormLayouts, error) {
 
 // Query ...
 type Query struct {
-	AppID string
+	AppID int
 
 	Condition string
 	OrderBy   string
@@ -525,12 +525,12 @@ type Query struct {
 	TotalCount bool
 }
 
-func NewQuery(appID string) *Query {
+func NewQuery(appID int) *Query {
 	return &Query{AppID: appID}
 }
 
 func (q Query) String() string {
-	str := fmt.Sprintf("app=%s", q.AppID)
+	str := fmt.Sprintf("app=%d", q.AppID)
 
 	//+query parameter
 	query := q.Condition

@@ -15,7 +15,7 @@ func TestBalk(t *testing.T) {
 			"value": SingleLineTextField("upsert value2"),
 		}})
 	}
-	err := repo.UpsertRecords(context.Background(), "1002", "", rs...)
+	err := repo.UpsertRecords(context.Background(), 1002, "", rs...)
 	if err != nil {
 		t.Error(err)
 		return

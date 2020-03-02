@@ -19,7 +19,7 @@ func init() {
 
 func TestRead(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
-	q := &Query{AppID: "670", Condition: `name="world"`, Fields: []string{"name", "日付"}}
+	q := &Query{AppID: 670, Condition: `name="world"`, Fields: []string{"name", "日付"}}
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
 		t.Error(err)
@@ -30,7 +30,7 @@ func TestRead(t *testing.T) {
 
 func TestReadWithOrderBy(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
-	q := &Query{AppID: "688", OrderBy: "グループ名 desc", Fields: []string{"name", "グループ名", "日付"}}
+	q := &Query{AppID: 688, OrderBy: "グループ名 desc", Fields: []string{"name", "グループ名", "日付"}}
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
 		t.Error(err)
@@ -58,7 +58,7 @@ func TestAdd(t *testing.T) {
 			}}}),
 		}})
 	}
-	ids, err := repo.AddRecords(nil, "688", rs...)
+	ids, err := repo.AddRecords(nil, 688, rs...)
 	if err != nil {
 		t.Error(err)
 		return
@@ -71,7 +71,7 @@ func TestUpdate(t *testing.T) {
 	rs := []*Record{
 		&Record{ID: "1662", Fields: Fields{"name": SingleLineTextField("world")}},
 	}
-	err := repo.UpdateRecords(nil, "670", "", rs...)
+	err := repo.UpdateRecords(nil, 670, "", rs...)
 	if err != nil {
 		t.Error(err)
 		return
@@ -81,7 +81,7 @@ func TestUpdate(t *testing.T) {
 func TestReadAndUpdate(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 
-	q := &Query{AppID: "688", Condition: `レコード番号="3145"`}
+	q := &Query{AppID: 688, Condition: `レコード番号="3145"`}
 
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
@@ -99,7 +99,7 @@ func TestReadAndUpdate(t *testing.T) {
 
 	rs = []*Record{r}
 
-	err = repo.UpdateRecords(nil, "688", "", rs...)
+	err = repo.UpdateRecords(nil, 688, "", rs...)
 	if err != nil {
 		t.Error(err)
 		return
@@ -109,7 +109,7 @@ func TestReadAndUpdate(t *testing.T) {
 func TestUpdateWithKey(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	rs := []*Record{&Record{ID: "1662", Fields: Fields{"id": SingleLineTextField("100"), "name": SingleLineTextField("world!!")}}}
-	err := repo.UpdateRecords(nil, "670", "id", rs...)
+	err := repo.UpdateRecords(nil, 670, "id", rs...)
 	if err != nil {
 		t.Error(err)
 		return
@@ -118,7 +118,7 @@ func TestUpdateWithKey(t *testing.T) {
 
 func TestReadFormFields(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
-	fs, err := repo.ReadFormFields("688")
+	fs, err := repo.ReadFormFields(688)
 	if err != nil {
 		t.Error(err)
 		return
@@ -138,7 +138,7 @@ func TestBulkAdds(t *testing.T) {
 		rs = append(rs, &Record{Fields: fs})
 	}
 
-	_, err := repo.AddRecords(nil, "688", rs...)
+	_, err := repo.AddRecords(nil, 688, rs...)
 	if err != nil {
 		t.Error(err)
 	}
@@ -152,7 +152,7 @@ func TestUpsertRecords(t *testing.T) {
 		// &Record{ID: "4148", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
 		// &Record{ID: "4147", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
 	}
-	err := repo.UpsertRecords(context.Background(), "688", "キー", rs...)
+	err := repo.UpsertRecords(context.Background(), 688, "キー", rs...)
 	if err != nil {
 		t.Error(err)
 	}
