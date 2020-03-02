@@ -246,10 +246,6 @@ func (repo *Repository) updateRecords(ctx context.Context, appID string, rs []*R
 		return errors.New("appID is required")
 	}
 
-	if updateKey == "" {
-		return errors.New("updateKey is required")
-	}
-
 	if len(rs) == 0 {
 		return nil
 	}
@@ -415,9 +411,9 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 		return errors.New("appID is required")
 	}
 
-	if updateKey == "" {
-		return errors.New("update key is required")
-	}
+	// if updateKey == "" {
+	// 	return errors.New("update key is required")
+	// }
 
 	if len(rs) == 0 {
 		return nil
@@ -426,15 +422,25 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 	//+新規レコードと既存レコードに分類
 
 	//+condition
+	searchKey := updateKey
+	if updateKey == "" {
+		searchKey = "レコード番号"
+	}
+
 	var condition string
 	for i, r := range rs {
-		id := fmt.Sprint(r.Fields[updateKey])
+		id := r.ID
+		if updateKey != "" {
+			id = fmt.Sprint(r.Fields[updateKey])
+		}
+
 		if i == 0 {
-			condition = fmt.Sprintf(`%s="%s"`, updateKey, id)
+			condition = fmt.Sprintf(`%s="%s"`, searchKey, id)
 			continue
 		}
-		condition = fmt.Sprintf(`%s or %s="%s"`, condition, updateKey, id)
+		condition = fmt.Sprintf(`%s or %s="%s"`, condition, searchKey, id)
 	}
+	// log.Printf("condition: %s", condition)
 	//-condition
 
 	q := &Query{AppID: appID, Condition: condition}
@@ -445,7 +451,11 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 
 	existKeys := make([]string, len(_rs))
 	for i, r := range _rs {
-		existKeys[i] = fmt.Sprint(r.Fields[updateKey])
+		key := r.ID
+		if updateKey != "" {
+			key = fmt.Sprint(r.Fields[updateKey])
+		}
+		existKeys[i] = key
 	}
 
 	var addRecords []*Record
@@ -462,7 +472,11 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 	}
 
 	for _, r := range rs {
-		if isExistID(fmt.Sprint(r.Fields[updateKey])) {
+		id := r.ID
+		if updateKey != "" {
+			id = fmt.Sprint(r.Fields[updateKey])
+		}
+		if isExistID(id) {
 			updateRecords = append(updateRecords, r)
 			continue
 		}
