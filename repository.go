@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -386,64 +387,8 @@ func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []stri
 
 //+UpsertRecords
 func (repo *Repository) UpsertRecords(ctx context.Context, appID string, updateKey string, rs ...*Record) error {
-	sliced := sliceRecords(rs, 100)
-
-	eg, ctx := errgroup.WithContext(ctx)
-	for _, _rs := range sliced {
-		_rs := _rs
-		eg.Go(func() error {
-			return func() error {
-				err := repo.upsertRecords(ctx, appID, updateKey, _rs...)
-				if err != nil {
-					return err
-				}
-				return nil
-			}()
-		})
-	}
-
-	return eg.Wait()
-}
-
-// 100レコードづつUpsert
-func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateKey string, rs ...*Record) error {
-	if appID == "" {
-		return errors.New("appID is required")
-	}
-
-	// if updateKey == "" {
-	// 	return errors.New("update key is required")
-	// }
-
-	if len(rs) == 0 {
-		return nil
-	}
-
-	//+新規レコードと既存レコードに分類
-
-	//+condition
-	searchKey := updateKey
-	if updateKey == "" {
-		searchKey = "レコード番号"
-	}
-
-	var condition string
-	for i, r := range rs {
-		id := r.ID
-		if updateKey != "" {
-			id = fmt.Sprint(r.Fields[updateKey])
-		}
-
-		if i == 0 {
-			condition = fmt.Sprintf(`%s="%s"`, searchKey, id)
-			continue
-		}
-		condition = fmt.Sprintf(`%s or %s="%s"`, condition, searchKey, id)
-	}
-	// log.Printf("condition: %s", condition)
-	//-condition
-
-	q := &Query{AppID: appID, Condition: condition}
+	//+existKeys
+	q := &Query{AppID: appID, Condition: "", Fields: []string{"レコード番号"}}
 	_rs, err := repo.ReadRecords(ctx, q)
 	if err != nil {
 		return err
@@ -458,6 +403,39 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 		existKeys[i] = key
 	}
 
+	log.Printf("%d exist keys", len(existKeys))
+	//-existKeys
+
+	sliced := sliceRecords(rs, 100)
+
+	eg, ctx := errgroup.WithContext(ctx)
+	for _, _rs := range sliced {
+		_rs := _rs
+		eg.Go(func() error {
+			return func() error {
+				err := repo.upsertRecords(ctx, appID, updateKey, existKeys, _rs...)
+				if err != nil {
+					return err
+				}
+				return nil
+			}()
+		})
+	}
+
+	return eg.Wait()
+}
+
+// 100レコードづつUpsert
+func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateKey string, existKeys []string, rs ...*Record) error {
+	if appID == "" {
+		return errors.New("appID is required")
+	}
+
+	if len(rs) == 0 {
+		return nil
+	}
+
+	//+新規レコードと既存レコードに分類
 	var addRecords []*Record
 	var updateRecords []*Record
 
@@ -484,7 +462,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID string, updateK
 	}
 	//-新規レコードと既存レコードに分類
 
-	_, err = repo.AddRecords(ctx, appID, addRecords...)
+	_, err := repo.AddRecords(ctx, appID, addRecords...)
 	if err != nil {
 		return errors.Wrap(err, "add records failed")
 	}

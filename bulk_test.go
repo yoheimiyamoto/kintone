@@ -12,7 +12,7 @@ func TestBalk(t *testing.T) {
 	var rs []*Record
 	for i := 2; i < 200000; i++ {
 		rs = append(rs, &Record{ID: strconv.Itoa(i), Fields: Fields{
-			"value": SingleLineTextField("upsert value"),
+			"value": SingleLineTextField("upsert value2"),
 		}})
 	}
 	err := repo.UpsertRecords(context.Background(), "1002", "", rs...)
