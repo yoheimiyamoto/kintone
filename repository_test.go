@@ -146,13 +146,21 @@ func TestBulkAdds(t *testing.T) {
 
 func TestUpsertRecords(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	// rs := []*Record{
+	// 	// &Record{ID: "", Fields: Fields{"キー": SingleLineTextField("world"), "グループ名": SingleLineTextField("world!!")}},
+	// 	&Record{ID: "", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello")}},
+	// 	// &Record{ID: "4148", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
+	// 	// &Record{ID: "4147", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
+	// }
+	// err := repo.UpsertRecords(context.Background(), 688, "キー", rs...)
+
 	rs := []*Record{
-		&Record{ID: "", Fields: Fields{"キー": SingleLineTextField("world"), "グループ名": SingleLineTextField("world!!")}},
-		&Record{ID: "", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
-		// &Record{ID: "4148", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
-		// &Record{ID: "4147", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
+		&Record{ID: "", Fields: Fields{
+			"VM加盟店番号_関連レコード用": SingleLineTextField("45075709998"),
+			"VM加盟店番号":         SingleLineTextField("45075709998"),
+		}},
 	}
-	err := repo.UpsertRecords(context.Background(), 688, "キー", rs...)
+	err := repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)
 	if err != nil {
 		t.Error(err)
 	}

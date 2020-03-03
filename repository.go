@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -193,6 +194,7 @@ func (repo *Repository) addRecords(ctx context.Context, appID int, rs []*Record)
 	if err != nil {
 		return nil, err
 	}
+	log.Println(string(body))
 
 	body, err = repo.Client.post(APIEndpointRecords, body)
 	if err != nil {
@@ -297,6 +299,7 @@ func (repo *Repository) updateRecords(ctx context.Context, appID int, rs []*Reco
 	if err != nil {
 		return err
 	}
+	log.Printf("body: %s", string(body))
 
 	_, err = repo.Client.put(APIEndpointRecords, body)
 	if err != nil {
@@ -453,7 +456,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		id := r.ID
 		if updateKey != "" {
 			id = fmt.Sprint(r.Fields[updateKey])
-			delete(r.Fields, "updateKey")
+			// delete(r.Fields, updateKey)
 		}
 		if isExistID(id) {
 			updateRecords = append(updateRecords, r)
@@ -461,6 +464,9 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		addRecords = append(addRecords, r)
 	}
+	log.Printf("add records: %v", addRecords[0])
+	log.Printf("update records: %v", updateRecords)
+
 	//-新規レコードと既存レコードに分類
 
 	_, err := repo.AddRecords(ctx, appID, addRecords...)
