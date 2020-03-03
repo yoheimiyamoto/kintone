@@ -464,9 +464,6 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		addRecords = append(addRecords, r)
 	}
-	log.Printf("add records: %v", addRecords[0])
-	log.Printf("update records: %v", updateRecords)
-
 	//-新規レコードと既存レコードに分類
 
 	_, err := repo.AddRecords(ctx, appID, addRecords...)
