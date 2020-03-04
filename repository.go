@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -404,6 +405,7 @@ func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		existKeys[i] = key
 	}
+	log.Printf("%d existKeys", len(existKeys))
 	//-existKeys
 
 	sliced := sliceRecords(rs, 100)
@@ -462,14 +464,18 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	}
 	//-新規レコードと既存レコードに分類
 
-	_, err := repo.AddRecords(ctx, appID, addRecords...)
-	if err != nil {
-		return errors.Wrap(err, "add records failed")
+	if addRecords != nil {
+		_, err := repo.AddRecords(ctx, appID, addRecords...)
+		if err != nil {
+			return errors.Wrap(err, "add records failed")
+		}
 	}
 
-	err = repo.UpdateRecords(ctx, appID, updateKey, updateRecords...)
-	if err != nil {
-		return errors.Wrap(err, "update records failed")
+	if updateRecords != nil {
+		err = repo.UpdateRecords(ctx, appID, updateKey, updateRecords...)
+		if err != nil {
+			return errors.Wrap(err, "update records failed")
+		}
 	}
 
 	return nil
