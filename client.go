@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -105,6 +106,8 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 }
 
 func (c *client) post(path string, body []byte) ([]byte, error) {
+	log.Printf("post: %s", string(body))
+
 	url, err := newURL(c.endpointBase, path, nil)
 	if err != nil {
 		return nil, err
@@ -120,6 +123,8 @@ func (c *client) post(path string, body []byte) ([]byte, error) {
 }
 
 func (c *client) put(path string, body []byte) ([]byte, error) {
+	log.Printf("put: %s", string(body))
+
 	url, err := newURL(c.endpointBase, path, nil)
 	if err != nil {
 		return nil, err

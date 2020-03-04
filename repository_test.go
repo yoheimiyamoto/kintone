@@ -167,11 +167,18 @@ func TestUpsertRecords(t *testing.T) {
 
 	rs := []*Record{
 		&Record{ID: "", Fields: Fields{
-			"VM加盟店番号_関連レコード用": SingleLineTextField("45075709998"),
-			"VM加盟店番号":         SingleLineTextField("45075709998"),
-			"累計決済回数_all":      NumberField(200),
+			"VM加盟店番号_関連レコード用": SingleLineTextField("45075709999"),
+			"VM加盟店番号":         SingleLineTextField("45075709999"),
+			"累計決済回数_all":      NumberField(500),
 		}},
 	}
+
+	// rs := []*Record{
+	// 	&Record{ID: "696062", Fields: Fields{
+	// 		"累計決済回数_all": NumberField(1000),
+	// 	}},
+	// }
+
 	err := repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)
 	if err != nil {
 		t.Error(err)

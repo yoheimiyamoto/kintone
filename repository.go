@@ -407,6 +407,7 @@ func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		existKeys[i] = key
 	}
+	log.Printf("existKeys: %v", existKeys)
 	//-existKeys
 
 	sliced := sliceRecords(rs, 100)
@@ -463,6 +464,9 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		addRecords = append(addRecords, r)
 	}
+
+	log.Printf("%d add records", len(addRecords))
+	log.Printf("%d update records", len(updateRecords))
 	//-新規レコードと既存レコードに分類
 
 	_, err := repo.AddRecords(ctx, appID, addRecords...)
