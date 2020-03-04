@@ -472,7 +472,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	}
 
 	if updateRecords != nil {
-		err = repo.UpdateRecords(ctx, appID, updateKey, updateRecords...)
+		err := repo.UpdateRecords(ctx, appID, updateKey, updateRecords...)
 		if err != nil {
 			return errors.Wrap(err, "update records failed")
 		}
