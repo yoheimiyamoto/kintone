@@ -154,10 +154,22 @@ func TestUpsertRecords(t *testing.T) {
 	// }
 	// err := repo.UpsertRecords(context.Background(), 688, "キー", rs...)
 
+	// rs := []*Record{
+	// 	&Record{ID: "", Fields: Fields{
+	// 		"VM加盟店番号_関連レコード用": SingleLineTextField("45075709998"),
+	// 		"VM加盟店番号":         SingleLineTextField("45075709998"),
+	// 	}},
+	// }
+	// err := repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+
 	rs := []*Record{
 		&Record{ID: "", Fields: Fields{
 			"VM加盟店番号_関連レコード用": SingleLineTextField("45075709998"),
 			"VM加盟店番号":         SingleLineTextField("45075709998"),
+			"累計決済回数_all":      NumberField(200),
 		}},
 	}
 	err := repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)

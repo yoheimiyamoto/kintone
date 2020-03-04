@@ -456,7 +456,6 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		id := r.ID
 		if updateKey != "" {
 			id = fmt.Sprint(r.Fields[updateKey])
-			// delete(r.Fields, updateKey)
 		}
 		if isExistID(id) {
 			updateRecords = append(updateRecords, r)
