@@ -44,8 +44,9 @@ type client struct {
 }
 
 // DefaultTimeout ...
+// KintoneAPIのタイムアウトは600秒
 const (
-	DefaultTimeout = time.Second * 600 // Default value for App.Timeout
+	DefaultTimeout = time.Second * 610
 )
 
 // Library internal errors.
