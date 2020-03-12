@@ -69,7 +69,7 @@ func TestAdd(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	rs := []*Record{
-		&Record{ID: "1662", Fields: Fields{"name": SingleLineTextField("world")}},
+		&Record{ID: "1662", Fields: Fields{"name": SingleLineTextField("卍<>*+!~^")}},
 	}
 	err := repo.UpdateRecords(nil, 670, "", rs...)
 	if err != nil {

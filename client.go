@@ -22,6 +22,8 @@ const (
 	APIEndpointFormField  = "/k/v1/app/form/fields.json"
 	APIEndpointFormLayout = "/k/v1/app/form/layout.json"
 	APIEndpointFile       = "/k/v1/file.json"
+
+	MaxRetry = 3
 )
 
 // Client ...
@@ -106,8 +108,6 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 }
 
 func (c *client) post(path string, body []byte) ([]byte, error) {
-	log.Printf("post: %s", string(body))
-
 	url, err := newURL(c.endpointBase, path, nil)
 	if err != nil {
 		return nil, err
@@ -123,8 +123,6 @@ func (c *client) post(path string, body []byte) ([]byte, error) {
 }
 
 func (c *client) put(path string, body []byte) ([]byte, error) {
-	log.Printf("put: %s", string(body))
-
 	url, err := newURL(c.endpointBase, path, nil)
 	if err != nil {
 		return nil, err
@@ -158,16 +156,34 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 	req.Header.Set("X-Cybozu-Authorization", c.apiToken)
 	req.SetBasicAuth(c.username, c.password)
 
-	res, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	var retryCount int
+	var res *http.Response
+	var err error
+	var body []byte
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
+	for {
+		res, err = c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err = ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		}
+		defer res.Body.Close()
+
+		if res.StatusCode == 200 {
+			break
+		}
+
+		retryCount++
+		if retryCount > MaxRetry {
+			break
+		}
+
+		log.Println("retry")
 	}
-	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
 		var e resError
