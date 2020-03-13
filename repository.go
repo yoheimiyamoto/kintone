@@ -49,7 +49,7 @@ func (repo *Repository) ReadRecords(ctx context.Context, q *Query) ([]*Record, e
 	// レコード数確認
 	totalCount, err := repo.readTotalCount(q)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read total count failed")
 	}
 
 	recordsCh := make(chan *Record, totalCount)
@@ -105,6 +105,9 @@ func (repo *Repository) read500Records(ctx context.Context, q *Query) ([]*Record
 		return nil, err
 	}
 
+	log.Printf("query: %s", q)
+	log.Printf("body: %s", string(body))
+
 	r := struct {
 		Records []*Record `json:"records"`
 	}{}
@@ -125,9 +128,9 @@ func (repo *Repository) readTotalCount(q *Query) (int, error) {
 	}
 
 	r := struct {
-		// Records    []*Record `json:"records"`
 		TotalCount int `json:"totalCount,string"`
 	}{}
+
 	if err := json.Unmarshal(body, &r); err != nil {
 		return 0, err
 	}
@@ -171,6 +174,10 @@ func (repo *Repository) AddRecords(ctx context.Context, appID int, rs ...*Record
 }
 
 func (repo *Repository) addRecords(ctx context.Context, appID int, rs []*Record) ([]string, error) {
+	if len(rs) == 0 {
+		return nil, nil
+	}
+
 	select {
 	case repo.Token <- struct{}{}: // acquire token
 		defer func() {
@@ -387,27 +394,6 @@ func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []stri
 
 //+UpsertRecords
 func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
-	//+existKeys
-	q := &Query{AppID: appID, Condition: "", Fields: []string{"レコード番号"}}
-	if updateKey != "" {
-		q.Fields = []string{updateKey}
-	}
-	_rs, err := repo.ReadRecords(ctx, q)
-	if err != nil {
-		return err
-	}
-
-	existKeys := make([]string, len(_rs))
-	for i, r := range _rs {
-		key := r.ID
-		if updateKey != "" {
-			key = fmt.Sprint(r.Fields[updateKey])
-		}
-		existKeys[i] = key
-	}
-	log.Printf("%d existKeys", len(existKeys))
-	//-existKeys
-
 	sliced := sliceRecords(rs, 100)
 
 	eg, ctx := errgroup.WithContext(ctx)
@@ -415,7 +401,7 @@ func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey 
 		_rs := _rs
 		eg.Go(func() error {
 			return func() error {
-				err := repo.upsertRecords(ctx, appID, updateKey, existKeys, _rs...)
+				err := repo.upsertRecords(ctx, appID, updateKey, _rs...)
 				if err != nil {
 					return err
 				}
@@ -428,7 +414,7 @@ func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey 
 }
 
 // 100レコードづつUpsert
-func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey string, existKeys []string, rs ...*Record) error {
+func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
 	if appID == 0 {
 		return errors.New("appID is required")
 	}
@@ -437,12 +423,50 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		return nil
 	}
 
+	//+existKeys
+	keyName := "レコード番号"
+	if updateKey != "" {
+		keyName = updateKey
+	}
+
+	condition := ""
+
+	for i, r := range rs {
+		id := r.ID
+		if updateKey != "" {
+			id = fmt.Sprint(r.Fields[updateKey])
+		}
+
+		if i == 0 {
+			condition = fmt.Sprintf(`%s="%s"`, keyName, id)
+			continue
+		}
+
+		condition += fmt.Sprintf(` or %s="%s"`, keyName, id)
+	}
+
+	q := &Query{AppID: appID, Fields: []string{keyName}, Condition: condition}
+	_rs, err := repo.ReadRecords(nil, q)
+	if err != nil {
+		return err
+	}
+
+	existKeys := make([]string, len(_rs))
+	for i, r := range _rs {
+		key := r.ID
+		if updateKey != "" {
+			key = fmt.Sprint(r.Fields[updateKey])
+		}
+		existKeys[i] = key
+	}
+	//-existKeys
+
 	//+新規レコードと既存レコードに分類
 	var addRecords []*Record
 	var updateRecords []*Record
 
 	// 既存のIDかどうかの判定
-	isExistID := func(id string) bool {
+	isExistKey := func(id string) bool {
 		for _, k := range existKeys {
 			if id == k {
 				return true
@@ -452,11 +476,11 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	}
 
 	for _, r := range rs {
-		id := r.ID
+		key := r.ID
 		if updateKey != "" {
-			id = fmt.Sprint(r.Fields[updateKey])
+			key = fmt.Sprint(r.Fields[updateKey])
 		}
-		if isExistID(id) {
+		if isExistKey(key) {
 			updateRecords = append(updateRecords, r)
 			continue
 		}

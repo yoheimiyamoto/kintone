@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/joho/godotenv"
@@ -38,6 +39,38 @@ func TestReadWithOrderBy(t *testing.T) {
 	}
 	t.Log(len(rs))
 	t.Logf("%v", rs[0])
+}
+
+func TestReadWithQuery(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+
+	start := 68304
+	length := 100
+
+	var ids []string
+	for i := start; i < start+length; i++ {
+		ids = append(ids, strconv.Itoa(i))
+	}
+
+	condition := ""
+
+	for i, id := range ids {
+		if i == 0 {
+			condition = fmt.Sprintf(`レコード番号="%s"`, id)
+			continue
+		}
+
+		condition += fmt.Sprintf(` or レコード番号="%s"`, id)
+	}
+
+	q := &Query{AppID: 58, Fields: []string{"レコード番号"}, Condition: condition}
+	rs, err := repo.ReadRecords(nil, q)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%d records", len(rs))
 }
 
 func TestAdd(t *testing.T) {
@@ -165,13 +198,13 @@ func TestUpsertRecords(t *testing.T) {
 	// 	t.Error(err)
 	// }
 
-	rs := []*Record{
-		&Record{ID: "", Fields: Fields{
-			"VM加盟店番号_関連レコード用": SingleLineTextField("45075709999"),
-			"VM加盟店番号":         SingleLineTextField("45075709999"),
-			"累計決済回数_all":      NumberField(500),
-		}},
-	}
+	// rs := []*Record{
+	// 	&Record{ID: "", Fields: Fields{
+	// 		"VM加盟店番号_関連レコード用": SingleLineTextField("45075709999"),
+	// 		"VM加盟店番号":         SingleLineTextField("45075709999"),
+	// 		"累計決済回数_all":      NumberField(500),
+	// 	}},
+	// }
 
 	// rs := []*Record{
 	// 	&Record{ID: "696062", Fields: Fields{
@@ -179,7 +212,15 @@ func TestUpsertRecords(t *testing.T) {
 	// 	}},
 	// }
 
-	err := repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)
+	rs := []*Record{
+		&Record{ID: "200002", Fields: Fields{
+			"id":        SingleLineTextField("600"),
+			"value":     SingleLineTextField("world!"),
+			"upsert_id": SingleLineTextField("1"),
+		}},
+	}
+
+	err := repo.UpsertRecords(context.Background(), 1002, "", rs...)
 	if err != nil {
 		t.Error(err)
 	}
