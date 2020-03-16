@@ -20,7 +20,8 @@ func init() {
 
 func TestRead(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
-	q := &Query{AppID: 670, Condition: `name="world"`, Fields: []string{"name", "日付"}}
+	// q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions!!"`, Fields: []string{"レコード番号"}}
+	q := &Query{AppID: 1002, Condition: `value="world!"`, Fields: []string{"レコード番号"}}
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
 		t.Error(err)
@@ -41,10 +42,25 @@ func TestReadWithOrderBy(t *testing.T) {
 	t.Logf("%v", rs[0])
 }
 
-func TestReadWithQuery(t *testing.T) {
+func TestReadWithQuery1(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
+
+	condition := `value="upsert via cloud functions!!"`
+
+	q := &Query{AppID: 1002, Fields: []string{"レコード番号"}, Condition: condition}
+	rs, err := repo.ReadRecords(nil, q)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%d records", len(rs))
+}
+
+func TestReadWithQuery2(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 
-	start := 68304
+	start := 20002
 	length := 100
 
 	var ids []string
@@ -63,7 +79,7 @@ func TestReadWithQuery(t *testing.T) {
 		condition += fmt.Sprintf(` or レコード番号="%s"`, id)
 	}
 
-	q := &Query{AppID: 58, Fields: []string{"レコード番号"}, Condition: condition}
+	q := &Query{AppID: 1002, Fields: []string{"レコード番号"}, Condition: condition}
 	rs, err := repo.ReadRecords(nil, q)
 	if err != nil {
 		t.Error(err)
@@ -178,49 +194,21 @@ func TestBulkAdds(t *testing.T) {
 }
 
 func TestUpsertRecords(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
-	// rs := []*Record{
-	// 	// &Record{ID: "", Fields: Fields{"キー": SingleLineTextField("world"), "グループ名": SingleLineTextField("world!!")}},
-	// 	&Record{ID: "", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello")}},
-	// 	// &Record{ID: "4148", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
-	// 	// &Record{ID: "4147", Fields: Fields{"キー": SingleLineTextField("hello"), "グループ名": SingleLineTextField("hello!!")}},
-	// }
-	// err := repo.UpsertRecords(context.Background(), 688, "キー", rs...)
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
 
-	// rs := []*Record{
-	// 	&Record{ID: "", Fields: Fields{
-	// 		"VM加盟店番号_関連レコード用": SingleLineTextField("45075709998"),
-	// 		"VM加盟店番号":         SingleLineTextField("45075709998"),
-	// 	}},
-	// }
-	// err := repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)
-	// if err != nil {
-	// 	t.Error(err)
-	// }
+	length := 10000
+	rs := make([]*Record, length)
 
-	// rs := []*Record{
-	// 	&Record{ID: "", Fields: Fields{
-	// 		"VM加盟店番号_関連レコード用": SingleLineTextField("45075709999"),
-	// 		"VM加盟店番号":         SingleLineTextField("45075709999"),
-	// 		"累計決済回数_all":      NumberField(500),
-	// 	}},
-	// }
-
-	// rs := []*Record{
-	// 	&Record{ID: "696062", Fields: Fields{
-	// 		"累計決済回数_all": NumberField(1000),
-	// 	}},
-	// }
-
-	rs := []*Record{
-		&Record{ID: "200002", Fields: Fields{
-			"id":        SingleLineTextField("600"),
-			"value":     SingleLineTextField("world!"),
-			"upsert_id": SingleLineTextField("1"),
-		}},
+	for i := 0; i < length; i++ {
+		id := fmt.Sprint(i)
+		rs[i] = &Record{ID: id, Fields: Fields{
+			"id":        SingleLineTextField(id),
+			"upsert_id": SingleLineTextField(id),
+			"value":     SingleLineTextField("cloud functions test 4"),
+		}}
 	}
 
-	err := repo.UpsertRecords(context.Background(), 1002, "", rs...)
+	err := repo.UpsertRecords(context.Background(), 1002, "upsert_id", rs...)
 	if err != nil {
 		t.Error(err)
 	}

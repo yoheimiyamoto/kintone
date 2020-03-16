@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -63,7 +62,7 @@ func (repo *Repository) ReadRecords(ctx context.Context, q *Query) ([]*Record, e
 		q := *q
 		q.offset = i
 		eg.Go(func() error {
-			_rs, err := repo.read500Records(ctx, &q)
+			_rs, err := repo.readRecords(ctx, &q)
 			if err != nil {
 				return err
 			}
@@ -90,7 +89,8 @@ func (repo *Repository) ReadRecords(ctx context.Context, q *Query) ([]*Record, e
 	return rs, nil
 }
 
-func (repo *Repository) read500Records(ctx context.Context, q *Query) ([]*Record, error) {
+// read 500 records
+func (repo *Repository) readRecords(ctx context.Context, q *Query) ([]*Record, error) {
 	select {
 	case repo.Token <- struct{}{}:
 		defer func() {
@@ -104,9 +104,6 @@ func (repo *Repository) read500Records(ctx context.Context, q *Query) ([]*Record
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("query: %s", q)
-	log.Printf("body: %s", string(body))
 
 	r := struct {
 		Records []*Record `json:"records"`
@@ -413,7 +410,7 @@ func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey 
 	return eg.Wait()
 }
 
-// 100レコードづつUpsert
+// upsert 100 records
 func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
 	if appID == 0 {
 		return errors.New("appID is required")
@@ -432,21 +429,21 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	condition := ""
 
 	for i, r := range rs {
-		id := r.ID
+		keyValue := r.ID
 		if updateKey != "" {
-			id = fmt.Sprint(r.Fields[updateKey])
+			keyValue = fmt.Sprint(r.Fields[updateKey])
 		}
 
 		if i == 0 {
-			condition = fmt.Sprintf(`%s="%s"`, keyName, id)
+			condition = fmt.Sprintf(`%s="%s"`, keyName, keyValue)
 			continue
 		}
 
-		condition += fmt.Sprintf(` or %s="%s"`, keyName, id)
+		condition += fmt.Sprintf(` or %s="%s"`, keyName, keyValue)
 	}
 
 	q := &Query{AppID: appID, Fields: []string{keyName}, Condition: condition}
-	_rs, err := repo.ReadRecords(nil, q)
+	_rs, err := repo.readRecords(ctx, q)
 	if err != nil {
 		return err
 	}
@@ -466,9 +463,9 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	var updateRecords []*Record
 
 	// 既存のIDかどうかの判定
-	isExistKey := func(id string) bool {
+	isExistKey := func(keyValue string) bool {
 		for _, k := range existKeys {
-			if id == k {
+			if keyValue == k {
 				return true
 			}
 		}
@@ -476,11 +473,11 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	}
 
 	for _, r := range rs {
-		key := r.ID
+		keyValue := r.ID
 		if updateKey != "" {
-			key = fmt.Sprint(r.Fields[updateKey])
+			keyValue = fmt.Sprint(r.Fields[updateKey])
 		}
-		if isExistKey(key) {
+		if isExistKey(keyValue) {
 			updateRecords = append(updateRecords, r)
 			continue
 		}
