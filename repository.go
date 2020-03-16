@@ -249,7 +249,7 @@ func (repo *Repository) UpdateRecords(ctx context.Context, appID int, updateKey 
 	return eg.Wait()
 }
 
-// 100レコードづつUpdate
+// update 100 records
 func (repo *Repository) updateRecords(ctx context.Context, appID int, rs []*Record, updateKey string) error {
 	if appID == 0 {
 		return errors.New("appID is required")
@@ -315,6 +315,7 @@ func (repo *Repository) updateRecords(ctx context.Context, appID int, rs []*Reco
 	return nil
 }
 
+// update 100 records with retry
 func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, rs []*Record, updateKey string) error {
 	if appID == 0 {
 		return errors.New("appID is required")
@@ -396,7 +397,6 @@ func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, r
 
 //+DeleteRecords
 
-// DeleteRecords ...
 func (repo *Repository) DeleteRecords(ctx context.Context, appID int, ids []string) error {
 	if ctx == nil {
 		ctx = context.Background()
@@ -439,7 +439,7 @@ func (repo *Repository) DeleteRecords(ctx context.Context, appID int, ids []stri
 	return eg.Wait()
 }
 
-// 100レコードづつDelete
+// delete 100 records
 func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []string) error {
 	select {
 	case repo.Token <- struct{}{}: // acquire token
