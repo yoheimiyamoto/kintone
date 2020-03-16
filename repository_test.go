@@ -21,8 +21,8 @@ func init() {
 func TestRead(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	// q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions!!"`, Fields: []string{"レコード番号"}}
-	q := &Query{AppID: 1002, Condition: `value="world!"`, Fields: []string{"レコード番号"}}
-	rs, err := repo.ReadRecords(nil, q)
+	q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions 5"`, Fields: []string{"レコード番号"}}
+	rs, err := repo.readRecords(context.Background(), q)
 	if err != nil {
 		t.Error(err)
 		return
@@ -209,6 +209,41 @@ func TestUpsertRecords(t *testing.T) {
 	}
 
 	err := repo.UpsertRecords(context.Background(), 1002, "upsert_id", rs...)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestUpsertKadenRecords(t *testing.T) {
+	ctx := context.Background()
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
+
+	//+ids
+	rs, err := repo.ReadRecords(ctx, &Query{AppID: 664, Condition: "", Fields: []string{"VM加盟店番号_関連レコード用"}})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	ids := make([]string, len(rs))
+	for i, r := range rs {
+		ids[i] = fmt.Sprint(r.Fields["VM加盟店番号_関連レコード用"])
+	}
+
+	ids = ids[0:1000]
+
+	log.Printf("%d ids", len(ids))
+	//-ids
+
+	rs = make([]*Record, len(ids))
+
+	for i, id := range ids {
+		rs[i] = &Record{ID: id, Fields: Fields{
+			"VM加盟店番号_関連レコード用":       SingleLineTextField(id),
+			"APPLY_DECIDING_FACTOR": SingleLineTextField("test4"),
+		}}
+	}
+
+	err = repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)
 	if err != nil {
 		t.Error(err)
 	}

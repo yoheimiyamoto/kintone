@@ -29,6 +29,7 @@ const (
 // Client ...
 type Client interface {
 	get(path string, q *Query) ([]byte, error)
+	getWithBody(path string, q *Query) ([]byte, error)
 	post(path string, body []byte) ([]byte, error)
 	put(path string, body []byte) ([]byte, error)
 	delete(path string, body []byte) ([]byte, error)
@@ -100,10 +101,45 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 		return nil, err
 	}
 
+	if len(url) > 4000 {
+		return c.getWithBody(path, q)
+	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	return c.do(req)
+}
+
+// urlの長さが4000を超える場合は、クエリをbodyにセットしてgetする
+func (c *client) getWithBody(path string, q *Query) ([]byte, error) {
+	u, err := newURL(c.endpointBase, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	raw := struct {
+		App    int      `json:"app"`
+		Query  string   `json:"query"`
+		Fields []string `json:"fields"`
+	}{
+		q.AppID,
+		q.Condition,
+		q.Fields,
+	}
+
+	body, err := json.Marshal(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", u, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	return c.do(req)
 }
