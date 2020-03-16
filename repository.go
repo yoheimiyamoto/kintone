@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -384,7 +385,8 @@ func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, r
 		if retryCount > maxRetry {
 			break
 		}
-		log.Println("retry")
+		log.Printf("retry %d", retryCount)
+		time.Sleep(time.Second * 10)
 	}
 
 	return err
