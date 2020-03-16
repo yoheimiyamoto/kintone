@@ -196,7 +196,7 @@ func TestBulkAdds(t *testing.T) {
 func TestUpsertRecords(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
 
-	length := 10000
+	length := 100
 	rs := make([]*Record, length)
 
 	for i := 0; i < length; i++ {
@@ -204,7 +204,7 @@ func TestUpsertRecords(t *testing.T) {
 		rs[i] = &Record{ID: id, Fields: Fields{
 			"id":        SingleLineTextField(id),
 			"upsert_id": SingleLineTextField(id),
-			"value":     SingleLineTextField("cloud functions test 4"),
+			"value":     SingleLineTextField("cloud functions test 6"),
 		}}
 	}
 

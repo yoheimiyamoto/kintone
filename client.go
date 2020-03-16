@@ -204,12 +204,6 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 			return nil, err
 		}
 
-		body, err = ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, err
-		}
-		defer res.Body.Close()
-
 		if res.StatusCode == 200 {
 			break
 		}
@@ -231,6 +225,12 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 		}
 		return nil, &e
 	}
+
+	body, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 
 	return body, nil
 }
