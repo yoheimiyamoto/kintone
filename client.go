@@ -196,7 +196,6 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 	var retryCount int
 	var res *http.Response
 	var err error
-	var body []byte
 
 	for {
 		res, err = c.httpClient.Do(req)
@@ -217,6 +216,11 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 		log.Println("retry")
 	}
 
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	if res.StatusCode != 200 {
 		var e resError
 		err = json.Unmarshal(body, &e)
@@ -226,10 +230,6 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 		return nil, &e
 	}
 
-	body, err = ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
 	defer res.Body.Close()
 
 	return body, nil
