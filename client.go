@@ -219,6 +219,7 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 			break
 		}
 
+		time.Sleep(time.Second * 10)
 		log.Println("retry")
 	}
 
