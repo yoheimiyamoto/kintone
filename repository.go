@@ -91,6 +91,8 @@ func (repo *Repository) ReadRecords(ctx context.Context, q *Query) ([]*Record, e
 
 // read 500 records
 func (repo *Repository) readRecords(ctx context.Context, q *Query) ([]*Record, error) {
+	q.limit = 500
+
 	select {
 	case repo.Token <- struct{}{}:
 		defer func() {

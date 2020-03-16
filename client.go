@@ -102,6 +102,7 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 	}
 
 	if len(url) > 4000 {
+		log.Println("get with body")
 		return c.getWithBody(path, q)
 	}
 
@@ -120,13 +121,27 @@ func (c *client) getWithBody(path string, q *Query) ([]byte, error) {
 		return nil, err
 	}
 
+	query := q.Condition
+
+	if q.OrderBy != "" {
+		query = fmt.Sprintf("%s order by %s", query, q.OrderBy)
+	}
+
+	if q.limit != 0 {
+		query = fmt.Sprintf("%s limit %d", query, q.limit)
+	}
+
+	if q.offset != 0 {
+		query = fmt.Sprintf("%s offset %d", query, q.offset)
+	}
+
 	raw := struct {
 		App    int      `json:"app"`
 		Query  string   `json:"query"`
 		Fields []string `json:"fields"`
 	}{
 		q.AppID,
-		q.Condition,
+		fmt.Sprintf(`%s limit %d`, q.Condition, q.limit),
 		q.Fields,
 	}
 
@@ -193,27 +208,9 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 	req.Header.Set("X-Cybozu-Authorization", c.apiToken)
 	req.SetBasicAuth(c.username, c.password)
 
-	var retryCount int
-	var res *http.Response
-	var err error
-
-	for {
-		res, err = c.httpClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-
-		if res.StatusCode == 200 {
-			break
-		}
-
-		retryCount++
-		if retryCount > MaxRetry {
-			break
-		}
-
-		time.Sleep(time.Second * 10)
-		log.Println("retry")
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -231,7 +228,53 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 		return nil, &e
 	}
 
-	log.Printf("body: %s", string(body))
+	return body, nil
+}
+
+func (c *client) doWithRetry(req *http.Request) ([]byte, error) {
+	req.Header.Set("X-Cybozu-Authorization", c.apiToken)
+	req.SetBasicAuth(c.username, c.password)
+
+	var retryCount int
+	var res *http.Response
+	var err error
+
+	// for {
+	res, err = c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// if res.StatusCode == 200 {
+	// 	break
+	// }
+
+	// if retryCount > MaxRetry {
+	// 	break
+	// }
+
+	// log.Println("retry")
+
+	retryCount++
+	time.Sleep(time.Second * 10)
+	// }
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	// if res.StatusCode != 200 {
+	// 	var e resError
+	// 	err = json.Unmarshal(body, &e)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return nil, &e
+	// }
+
+	// log.Printf("body: %s", string(body))
 
 	return body, nil
 }

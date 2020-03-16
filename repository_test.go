@@ -89,6 +89,38 @@ func TestReadWithQuery2(t *testing.T) {
 	t.Logf("%d records", len(rs))
 }
 
+func TestRead500Records(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+
+	start := 20002
+	length := 500
+
+	var ids []string
+	for i := start; i < start+length; i++ {
+		ids = append(ids, strconv.Itoa(i))
+	}
+	log.Printf("%d ids", len(ids))
+
+	condition := ""
+
+	for i, id := range ids {
+		if i == 0 {
+			condition = fmt.Sprintf(`レコード番号="%s"`, id)
+			continue
+		}
+
+		condition += fmt.Sprintf(` or レコード番号="%s"`, id)
+	}
+
+	q := &Query{AppID: 1002, Fields: []string{"レコード番号"}, Condition: condition}
+	rs, err := repo.readRecords(context.Background(), q)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%d records", len(rs))
+}
 func TestAdd(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	var rs []*Record
@@ -196,7 +228,7 @@ func TestBulkAdds(t *testing.T) {
 func TestUpsertRecords(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
 
-	length := 100
+	length := 1000
 	rs := make([]*Record, length)
 
 	for i := 0; i < length; i++ {
@@ -204,7 +236,7 @@ func TestUpsertRecords(t *testing.T) {
 		rs[i] = &Record{ID: id, Fields: Fields{
 			"id":        SingleLineTextField(id),
 			"upsert_id": SingleLineTextField(id),
-			"value":     SingleLineTextField("cloud functions test 6"),
+			"value":     SingleLineTextField("cloud functions test 7"),
 		}}
 	}
 
