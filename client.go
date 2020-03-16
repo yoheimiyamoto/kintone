@@ -220,6 +220,7 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
 		var e resError
@@ -230,7 +231,7 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 		return nil, &e
 	}
 
-	defer res.Body.Close()
+	log.Printf("body: %s", string(body))
 
 	return body, nil
 }
