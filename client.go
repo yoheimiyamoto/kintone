@@ -229,54 +229,6 @@ func (c *client) do(req *http.Request) ([]byte, error) {
 	return body, nil
 }
 
-func (c *client) doWithRetry(req *http.Request) ([]byte, error) {
-	req.Header.Set("X-Cybozu-Authorization", c.apiToken)
-	req.SetBasicAuth(c.username, c.password)
-
-	var retryCount int
-	var res *http.Response
-	var err error
-
-	// for {
-	res, err = c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// if res.StatusCode == 200 {
-	// 	break
-	// }
-
-	// if retryCount > MaxRetry {
-	// 	break
-	// }
-
-	// log.Println("retry")
-
-	retryCount++
-	time.Sleep(time.Second * 10)
-	// }
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	// if res.StatusCode != 200 {
-	// 	var e resError
-	// 	err = json.Unmarshal(body, &e)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	return nil, &e
-	// }
-
-	// log.Printf("body: %s", string(body))
-
-	return body, nil
-}
-
 func newURL(endpointBase *url.URL, path string, q *Query) (string, error) {
 	u := *endpointBase
 	u.Path = path

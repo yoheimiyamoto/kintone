@@ -372,7 +372,7 @@ func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, r
 		return err
 	}
 
-	maxRetry := 3
+	maxRetry := 5
 	var retryCount int
 
 	for {
