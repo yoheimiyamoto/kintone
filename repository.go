@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -235,7 +236,7 @@ func (repo *Repository) UpdateRecords(ctx context.Context, appID int, updateKey 
 		_rs := _rs
 		eg.Go(func() error {
 			return func() error {
-				err := repo.updateRecords(ctx, appID, _rs, updateKey)
+				err := repo.updateRecordsWithRetry(ctx, appID, _rs, updateKey)
 				if err != nil {
 					return err
 				}
@@ -311,6 +312,82 @@ func (repo *Repository) updateRecords(ctx context.Context, appID int, rs []*Reco
 	}
 
 	return nil
+}
+
+func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, rs []*Record, updateKey string) error {
+	if appID == 0 {
+		return errors.New("appID is required")
+	}
+
+	if len(rs) == 0 {
+		return nil
+	}
+
+	select {
+	case repo.Token <- struct{}{}: // acquire token
+		defer func() {
+			<-repo.Token
+		}()
+	case <-ctx.Done(): // cancelled
+		return errors.New("canceled")
+	}
+
+	type UpdateRecord interface{}
+
+	type UpdateRecordWithID struct {
+		ID     string `json:"id"`
+		Record Fields `json:"record"`
+	}
+
+	type UpdateKey struct {
+		Field string `json:"field"`
+		Value string `json:"value"`
+	}
+
+	type UpdateRecordWithUpdateKey struct {
+		UpdateKey UpdateKey `json:"updateKey"`
+		Record    Fields    `json:"record"`
+	}
+
+	type requestBody struct {
+		App     int            `json:"app"`
+		Records []UpdateRecord `json:"records"`
+	}
+
+	records := make([]UpdateRecord, len(rs))
+
+	for i, r := range rs {
+		if updateKey == "" {
+			records[i] = &UpdateRecordWithID{r.ID, r.Fields}
+		} else {
+			u := UpdateKey{Field: updateKey, Value: fmt.Sprint(r.Fields[updateKey])}
+			delete(r.Fields, updateKey)
+			records[i] = &UpdateRecordWithUpdateKey{u, r.Fields}
+		}
+	}
+
+	body, err := json.Marshal(requestBody{appID, records})
+	if err != nil {
+		return err
+	}
+
+	maxRetry := 3
+	var retryCount int
+
+	for {
+		_, err = repo.Client.put(APIEndpointRecords, body)
+		if err == nil {
+			break
+		}
+
+		retryCount++
+		if retryCount > maxRetry {
+			break
+		}
+		log.Println("retry")
+	}
+
+	return err
 }
 
 //-UpdateRecords

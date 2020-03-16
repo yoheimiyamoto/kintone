@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -102,7 +101,6 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 	}
 
 	if len(url) > 4000 {
-		log.Println("get with body")
 		return c.getWithBody(path, q)
 	}
 

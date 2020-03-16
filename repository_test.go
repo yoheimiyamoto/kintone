@@ -236,7 +236,7 @@ func TestUpsertRecords(t *testing.T) {
 		rs[i] = &Record{ID: id, Fields: Fields{
 			"id":        SingleLineTextField(id),
 			"upsert_id": SingleLineTextField(id),
-			"value":     SingleLineTextField("cloud functions test 7"),
+			"value":     SingleLineTextField("cloud functions test 8"),
 		}}
 	}
 
