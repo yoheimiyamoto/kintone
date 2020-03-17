@@ -15,7 +15,7 @@ import (
 
 const (
 	MaxRetry      = 10
-	RetryInterval = 2 // second
+	RetryInterval = 5 // second
 )
 
 // Repository ...
