@@ -21,8 +21,6 @@ const (
 	APIEndpointFormField  = "/k/v1/app/form/fields.json"
 	APIEndpointFormLayout = "/k/v1/app/form/layout.json"
 	APIEndpointFile       = "/k/v1/file.json"
-
-	MaxRetry = 3
 )
 
 // Client ...

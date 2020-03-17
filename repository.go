@@ -13,6 +13,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	MaxRetry      = 10
+	RetryInterval = 1 // second
+)
+
 // Repository ...
 type Repository struct {
 	Client Client
@@ -373,7 +378,6 @@ func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, r
 		return err
 	}
 
-	maxRetry := 5
 	var retryCount int
 
 	for {
@@ -383,11 +387,11 @@ func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, r
 		}
 
 		retryCount++
-		if retryCount > maxRetry {
+		if retryCount > MaxRetry {
 			break
 		}
 		log.Printf("retry %d", retryCount)
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * RetryInterval)
 	}
 
 	return err
