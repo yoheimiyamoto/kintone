@@ -124,7 +124,7 @@ func TestRead500Records(t *testing.T) {
 func TestAdd(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	var rs []*Record
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 1000; i++ {
 		rs = append(rs, &Record{Fields: Fields{
 			"グループ名":     SingleLineTextField(fmt.Sprintf("hello%d", i)),
 			"文字列__複数行_": MultiLineTextField("hello world!"),
@@ -254,16 +254,17 @@ func TestBulkAdds(t *testing.T) {
 func TestUpsertRecords(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
 
+	start := 30000
 	length := 1000
-	rs := make([]*Record, length)
+	var rs []*Record
 
-	for i := 0; i < length; i++ {
+	for i := start; i < start+length; i++ {
 		id := fmt.Sprint(i)
-		rs[i] = &Record{ID: id, Fields: Fields{
+		rs = append(rs, &Record{ID: id, Fields: Fields{
 			"id":        SingleLineTextField(id),
 			"upsert_id": SingleLineTextField(id),
 			"value":     SingleLineTextField("cloud functions test 8"),
-		}}
+		}})
 	}
 
 	err := repo.UpsertRecords(context.Background(), 1002, "upsert_id", rs...)
