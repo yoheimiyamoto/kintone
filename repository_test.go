@@ -147,6 +147,32 @@ func TestAdd(t *testing.T) {
 	t.Log(ids)
 }
 
+func TestAddWithRetry(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	var rs []*Record
+	for i := 0; i < 1; i++ {
+		rs = append(rs, &Record{Fields: Fields{
+			"グループ名":     SingleLineTextField(fmt.Sprintf("hello%d", i)),
+			"文字列__複数行_": MultiLineTextField("hello world!"),
+			"チェックボックス":  CheckBoxField([]string{"sample1"}),
+			"ドロップダウン":   NewSingleSelectField("sample1"),
+			"複数選択":      MultiSelectField([]string{"sample1", "sample2"}),
+			"ユーザー選択":    UsersField{&CodeField{Code: "yoheimiyamoto"}},
+			"日付":        NewDateField(2011, 1, 1),
+			"テーブル": TableField([]*Record{&Record{Fields: Fields{
+				"テーブルフィールド1": SingleLineTextField("hello"),
+				"テーブルフィールド2": SingleLineTextField("hello"),
+			}}}),
+		}})
+	}
+	ids, err := repo.addRecordsWithRetry(context.Background(), 688, rs)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log(ids)
+}
+
 func TestUpdate(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	rs := []*Record{

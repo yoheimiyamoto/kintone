@@ -161,7 +161,7 @@ func (repo *Repository) AddRecords(ctx context.Context, appID int, rs ...*Record
 		_rs := _rs
 		eg.Go(func() error {
 			return func() error {
-				_ids, err := repo.addRecords(ctx, appID, _rs)
+				_ids, err := repo.addRecordsWithRetry(ctx, appID, _rs)
 				if err != nil {
 					return err
 				}
@@ -209,6 +209,67 @@ func (repo *Repository) addRecords(ctx context.Context, appID int, rs []*Record)
 	}
 
 	body, err = repo.Client.post(APIEndpointRecords, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var reponseBody struct {
+		IDs []string `json:"ids"`
+	}
+
+	err = json.Unmarshal(body, &reponseBody)
+	if err != nil {
+		return nil, err
+	}
+
+	return reponseBody.IDs, nil
+}
+
+func (repo *Repository) addRecordsWithRetry(ctx context.Context, appID int, rs []*Record) ([]string, error) {
+	if len(rs) == 0 {
+		return nil, nil
+	}
+
+	select {
+	case repo.Token <- struct{}{}: // acquire token
+		defer func() {
+			<-repo.Token
+		}()
+	case <-ctx.Done(): // cancelled
+		return nil, errors.New("canceled")
+	}
+
+	type requestBody struct {
+		App     int      `json:"app"`
+		Records []Fields `json:"records"`
+	}
+
+	fs := make([]Fields, len(rs))
+	for i, r := range rs {
+		fs[i] = r.Fields
+	}
+
+	body, err := json.Marshal(requestBody{appID, fs})
+	if err != nil {
+		return nil, err
+	}
+
+	var retryCount int
+
+	for {
+		body, err = repo.Client.post(APIEndpointRecords, body)
+		if err == nil {
+			break
+		}
+
+		retryCount++
+		if retryCount > MaxRetry {
+			break
+		}
+		log.Printf("retry %d", retryCount)
+		time.Sleep(time.Second * RetryInterval)
+	}
+
 	if err != nil {
 		return nil, err
 	}
