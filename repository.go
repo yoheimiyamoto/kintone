@@ -249,15 +249,17 @@ func (repo *Repository) addRecordsWithRetry(ctx context.Context, appID int, rs [
 		fs[i] = r.Fields
 	}
 
-	body, err := json.Marshal(requestBody{appID, fs})
+	var retryCount int
+
+	requestData, err := json.Marshal(requestBody{appID, fs})
 	if err != nil {
 		return nil, err
 	}
 
-	var retryCount int
+	var resData []byte
 
 	for {
-		body, err = repo.Client.post(APIEndpointRecords, body)
+		resData, err = repo.Client.post(APIEndpointRecords, requestData)
 		if err == nil {
 			break
 		}
@@ -278,7 +280,7 @@ func (repo *Repository) addRecordsWithRetry(ctx context.Context, appID int, rs [
 		IDs []string `json:"ids"`
 	}
 
-	err = json.Unmarshal(body, &reponseBody)
+	err = json.Unmarshal(resData, &reponseBody)
 	if err != nil {
 		return nil, err
 	}
