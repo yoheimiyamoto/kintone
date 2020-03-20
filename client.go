@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -161,8 +160,6 @@ func (c *client) post(path string, body []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("body: %s", string(body))
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {

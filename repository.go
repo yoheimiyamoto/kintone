@@ -269,6 +269,7 @@ func (repo *Repository) addRecordsWithRetry(ctx context.Context, appID int, rs [
 			break
 		}
 		log.Printf("retry %d", retryCount)
+		log.Printf("retry body: %s", string(requestData))
 		time.Sleep(time.Second * RetryInterval)
 	}
 
