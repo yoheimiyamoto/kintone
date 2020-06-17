@@ -242,6 +242,35 @@ func TestBulkAdds(t *testing.T) {
 	}
 }
 
+func TestReadRecordsWithCursor(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 90})
+
+	q := NewQuery(1002)
+	q.Condition = `レコード番号="212002"`
+	q.Fields = []string{"name"}
+
+	rs, err := repo.ReadRecordsWithCursor(q)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Log(rs[0])
+}
+
+func TestGetCursor(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 90})
+
+	q := NewQuery(1002)
+
+	c, err := repo.getCursor(q)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(c)
+}
+
 func TestUpsertRecords(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
 
