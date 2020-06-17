@@ -74,14 +74,14 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 			var _f StatusField
 			err = json.Unmarshal(*raw.Value, &_f)
 			f = _f
-		case FieldTypeRecordNumber:
-			var _f RecordNumberField
-			err = json.Unmarshal(*raw.Value, &_f)
-			f = _f
-		case FieldTypeID:
-			var _f IDField
-			err = json.Unmarshal(*raw.Value, &_f)
-			f = _f
+		// case FieldTypeRecordNumber:
+		// 	var _f RecordNumberField
+		// 	err = json.Unmarshal(*raw.Value, &_f)
+		// 	f = _f
+		// case FieldTypeID:
+		// 	var _f IDField
+		// 	err = json.Unmarshal(*raw.Value, &_f)
+		// 	f = _f
 		case FieldTypeCalc:
 			var _f CalcField
 			err = json.Unmarshal(*raw.Value, &_f)
@@ -124,19 +124,19 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 			}
 			f = _f
 		case FieldTypeUsers, FieldTypeAssignee:
-			var _f UsersField
+			var _f []*UserField
 			err = json.Unmarshal(*raw.Value, &_f)
 			f = _f
 		case FieldTypeCreator, FieldTypeModifier:
 			var _f UserField
 			err = json.Unmarshal(*raw.Value, &_f)
-			f = _f
+			f = &_f
 		case FieldTypeOrganization:
-			var _f OrganizationsField
+			var _f []*OrganizationField
 			err = json.Unmarshal(*raw.Value, &_f)
 			f = _f
 		case FieldTypeGroup:
-			var _f GroupsField
+			var _f []*GroupField
 			err = json.Unmarshal(*raw.Value, &_f)
 			f = _f
 		case FieldTypeCategory:

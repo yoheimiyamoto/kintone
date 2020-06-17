@@ -329,7 +329,7 @@ type File struct {
 	Size        uint64 `json:"size,string"`
 }
 
-func (f File) String() string {
+func (f *File) String() string {
 	return string(f.Name)
 }
 
@@ -343,32 +343,30 @@ type CodeField struct {
 	Name string `json:"name"`
 }
 
-func (c CodeField) String() string {
+func (c *CodeField) String() string {
 	return c.Name
 }
 
 // UserField ...
 type UserField CodeField
 
-// CodeFields ...
-type CodeFields []*CodeField
-
-func (f CodeFields) String() string {
-	args := make([]string, len(f))
-	for i, v := range f {
-		args[i] = v.Name
-	}
-	return strings.Join(args, ",")
+func (f *UserField) String() string {
+	return f.Name
 }
 
-// UsersField ...
-type UsersField CodeFields
+// OrganizationField ...
+type OrganizationField CodeField
 
-// OrganizationsField ...
-type OrganizationsField CodeFields
+func (f *OrganizationField) String() string {
+	return f.Name
+}
 
-// GroupsField ...
-type GroupsField CodeFields
+// GroupField ...
+type GroupField CodeField
+
+func (f *GroupField) String() string {
+	return f.Name
+}
 
 //-CodeField
 

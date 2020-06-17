@@ -7,16 +7,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
-
-	"github.com/joho/godotenv"
 )
-
-func init() {
-	err := godotenv.Load("kintone.env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-}
 
 func TestRead(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
@@ -131,7 +122,7 @@ func TestAdd(t *testing.T) {
 			"チェックボックス":  CheckBoxField([]string{"sample1"}),
 			"ドロップダウン":   NewSingleSelectField("sample1"),
 			"複数選択":      MultiSelectField([]string{"sample1", "sample2"}),
-			"ユーザー選択":    UsersField{&CodeField{Code: "yoheimiyamoto"}},
+			"ユーザー選択":    []*UserField{&UserField{Code: "yoheimiyamoto"}},
 			"日付":        NewDateField(2011, 1, 1),
 			"テーブル": TableField([]*Record{&Record{Fields: Fields{
 				"テーブルフィールド1": SingleLineTextField("hello"),
@@ -157,9 +148,9 @@ func TestAddWithRetry(t *testing.T) {
 			"チェックボックス":  CheckBoxField([]string{"sample1"}),
 			"ドロップダウン":   NewSingleSelectField("sample1"),
 			"複数選択":      MultiSelectField([]string{"sample1", "sample2"}),
-			"ユーザー選択":    UsersField{&CodeField{Code: "yoheimiyamoto"}},
+			"ユーザー選択":    []*UserField{{Code: "yoheimiyamoto"}},
 			"日付":        NewDateField(2011, 1, 1),
-			"テーブル": TableField([]*Record{&Record{Fields: Fields{
+			"テーブル": TableField([]*Record{{Fields: Fields{
 				"テーブルフィールド1": SingleLineTextField("hello"),
 				"テーブルフィールド2": SingleLineTextField("hello"),
 			}}}),
