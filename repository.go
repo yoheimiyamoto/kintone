@@ -671,7 +671,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	}
 
 	q := &Query{AppID: appID, Fields: []string{keyName}, Condition: condition}
-	_rs, err := repo.readRecords(ctx, q)
+	_rs, err := repo.ReadRecordsWithCursor(q)
 	if err != nil {
 		return errors.Wrap(err, "read exist key values failed")
 	}
