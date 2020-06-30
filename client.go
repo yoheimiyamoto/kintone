@@ -14,19 +14,20 @@ import (
 
 // APIEndpoint constants
 const (
-	APIEndpointBase       = "https://%s.cybozu.com"
-	APIEndpointRecord     = "/k/v1/record.json"
-	APIEndpointRecords    = "/k/v1/records.json"
-	APIEndpointApp        = "/k/v1/app.json"
-	APIEndpointFormField  = "/k/v1/app/form/fields.json"
-	APIEndpointFormLayout = "/k/v1/app/form/layout.json"
-	APIEndpointFile       = "/k/v1/file.json"
+	APIEndpointBase          = "https://%s.cybozu.com"
+	APIEndpointRecord        = "/k/v1/record.json"
+	APIEndpointRecords       = "/k/v1/records.json"
+	APIEndpointRecordsCursor = "k/v1/records/cursor.json"
+	APIEndpointApp           = "/k/v1/app.json"
+	APIEndpointFormField     = "/k/v1/app/form/fields.json"
+	APIEndpointFormLayout    = "/k/v1/app/form/layout.json"
+	APIEndpointFile          = "/k/v1/file.json"
 )
 
 // Client ...
 type Client interface {
 	get(path string, q *Query) ([]byte, error)
-	getWithBody(path string, q *Query) ([]byte, error)
+	getWithBody(path string, body []byte) ([]byte, error)
 	post(path string, body []byte) ([]byte, error)
 	put(path string, body []byte) ([]byte, error)
 	delete(path string, body []byte) ([]byte, error)
@@ -98,8 +99,38 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 		return nil, err
 	}
 
+	// urlの長さが4000を超える場合は、クエリをbodyにセットしてgetする
 	if len(url) > 4000 {
-		return c.getWithBody(path, q)
+		query := q.Condition
+
+		if q.OrderBy != "" {
+			query = fmt.Sprintf("%s order by %s", query, q.OrderBy)
+		}
+
+		if q.limit != 0 {
+			query = fmt.Sprintf("%s limit %d", query, q.limit)
+		}
+
+		if q.offset != 0 {
+			query = fmt.Sprintf("%s offset %d", query, q.offset)
+		}
+
+		raw := struct {
+			App    int      `json:"app"`
+			Query  string   `json:"query"`
+			Fields []string `json:"fields"`
+		}{
+			q.AppID,
+			fmt.Sprintf(`%s limit %d`, q.Condition, q.limit),
+			q.Fields,
+		}
+
+		body, err := json.Marshal(raw)
+		if err != nil {
+			return nil, err
+		}
+
+		return c.getWithBody(path, body)
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -111,37 +142,8 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 }
 
 // urlの長さが4000を超える場合は、クエリをbodyにセットしてgetする
-func (c *client) getWithBody(path string, q *Query) ([]byte, error) {
+func (c *client) getWithBody(path string, body []byte) ([]byte, error) {
 	u, err := newURL(c.endpointBase, path, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	query := q.Condition
-
-	if q.OrderBy != "" {
-		query = fmt.Sprintf("%s order by %s", query, q.OrderBy)
-	}
-
-	if q.limit != 0 {
-		query = fmt.Sprintf("%s limit %d", query, q.limit)
-	}
-
-	if q.offset != 0 {
-		query = fmt.Sprintf("%s offset %d", query, q.offset)
-	}
-
-	raw := struct {
-		App    int      `json:"app"`
-		Query  string   `json:"query"`
-		Fields []string `json:"fields"`
-	}{
-		q.AppID,
-		fmt.Sprintf(`%s limit %d`, q.Condition, q.limit),
-		q.Fields,
-	}
-
-	body, err := json.Marshal(raw)
 	if err != nil {
 		return nil, err
 	}

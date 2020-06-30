@@ -7,16 +7,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
-
-	"github.com/joho/godotenv"
 )
-
-func init() {
-	err := godotenv.Load("kintone.env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-}
 
 func TestRead(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
@@ -131,7 +122,7 @@ func TestAdd(t *testing.T) {
 			"チェックボックス":  CheckBoxField([]string{"sample1"}),
 			"ドロップダウン":   NewSingleSelectField("sample1"),
 			"複数選択":      MultiSelectField([]string{"sample1", "sample2"}),
-			"ユーザー選択":    UsersField{&CodeField{Code: "yoheimiyamoto"}},
+			"ユーザー選択":    []*UserField{&UserField{Code: "yoheimiyamoto"}},
 			"日付":        NewDateField(2011, 1, 1),
 			"テーブル": TableField([]*Record{&Record{Fields: Fields{
 				"テーブルフィールド1": SingleLineTextField("hello"),
@@ -157,9 +148,9 @@ func TestAddWithRetry(t *testing.T) {
 			"チェックボックス":  CheckBoxField([]string{"sample1"}),
 			"ドロップダウン":   NewSingleSelectField("sample1"),
 			"複数選択":      MultiSelectField([]string{"sample1", "sample2"}),
-			"ユーザー選択":    UsersField{&CodeField{Code: "yoheimiyamoto"}},
+			"ユーザー選択":    []*UserField{{Code: "yoheimiyamoto"}},
 			"日付":        NewDateField(2011, 1, 1),
-			"テーブル": TableField([]*Record{&Record{Fields: Fields{
+			"テーブル": TableField([]*Record{{Fields: Fields{
 				"テーブルフィールド1": SingleLineTextField("hello"),
 				"テーブルフィールド2": SingleLineTextField("hello"),
 			}}}),
@@ -251,58 +242,51 @@ func TestBulkAdds(t *testing.T) {
 	}
 }
 
+func TestReadRecordsWithCursor(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 90})
+
+	q := NewQuery(1002)
+	q.Condition = `レコード番号="212002"`
+	q.Fields = []string{"name"}
+
+	rs, err := repo.ReadRecordsWithCursor(q)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Log(rs[0])
+}
+
+func TestGetCursor(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 90})
+
+	q := NewQuery(1002)
+
+	c, err := repo.getCursor(q)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(c)
+}
+
 func TestUpsertRecords(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
 
-	start := 30000
+	start := 200388
 	length := 1000
 	var rs []*Record
 
 	for i := start; i < start+length; i++ {
 		id := fmt.Sprint(i)
 		rs = append(rs, &Record{ID: id, Fields: Fields{
-			"id":        SingleLineTextField(id),
-			"upsert_id": SingleLineTextField(id),
-			"value":     SingleLineTextField("cloud functions test 8"),
+			"id":   SingleLineTextField(id),
+			"name": SingleLineTextField("hello"),
 		}})
 	}
 
-	err := repo.UpsertRecords(context.Background(), 1002, "upsert_id", rs...)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func TestUpsertKadenRecords(t *testing.T) {
-	ctx := context.Background()
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
-
-	//+ids
-	rs, err := repo.ReadRecords(ctx, &Query{AppID: 664, Condition: "", Fields: []string{"VM加盟店番号_関連レコード用"}})
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	ids := make([]string, len(rs))
-	for i, r := range rs {
-		ids[i] = fmt.Sprint(r.Fields["VM加盟店番号_関連レコード用"])
-	}
-
-	ids = ids[0:1000]
-
-	log.Printf("%d ids", len(ids))
-	//-ids
-
-	rs = make([]*Record, len(ids))
-
-	for i, id := range ids {
-		rs[i] = &Record{ID: id, Fields: Fields{
-			"VM加盟店番号_関連レコード用":       SingleLineTextField(id),
-			"APPLY_DECIDING_FACTOR": SingleLineTextField("test4"),
-		}}
-	}
-
-	err = repo.UpsertRecords(context.Background(), 664, "VM加盟店番号_関連レコード用", rs...)
+	err := repo.UpsertRecords(context.Background(), 1001, "id", rs...)
 	if err != nil {
 		t.Error(err)
 	}

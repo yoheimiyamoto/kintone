@@ -2,9 +2,19 @@ package kintone
 
 import (
 	"encoding/json"
+	"log"
 	"reflect"
 	"testing"
+
+	"github.com/joho/godotenv"
 )
+
+func init() {
+	err := godotenv.Load("kintone.env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
 
 func TestJsonEqual(t *testing.T) {
 	data1 := []byte(`{"name":"hello", "age":100}`)

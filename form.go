@@ -34,8 +34,8 @@ type FormField struct {
 	ReferenceTable ReferenceTable `json:"referenceTalbe"` // 関連レコード一覧
 	Lookup         Lookup         `json:"lookup"`
 	OpenGroup      bool           `json:"openGroup"`
-	Fields         FormFields
-	Enabled        bool `json:"enabled"`
+	Fields         FormFields     `json:"fields"`
+	Enabled        bool           `json:"enabled"`
 }
 
 type Options []string

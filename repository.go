@@ -29,6 +29,11 @@ type RepositoryOption struct {
 	MaxConcurrent int
 }
 
+type Cursor struct {
+	ID         string `json:"id"`
+	TotalCount int    `json:"totalCount,string"`
+}
+
 // NewRepository ...
 func NewRepository(subdomain string, username, password string, option *RepositoryOption) *Repository {
 	var httpClient *http.Client
@@ -142,6 +147,81 @@ func (repo *Repository) readTotalCount(q *Query) (int, error) {
 	}
 
 	return r.TotalCount, nil
+}
+
+func (repo *Repository) ReadRecordsWithCursor(q *Query) ([]*Record, error) {
+	c, err := repo.getCursor(q)
+	if err != nil {
+		return nil, errors.Wrap(err, "get cursor failed")
+	}
+
+	var resuestBody = struct {
+		ID string `json:"id"`
+	}{c.ID}
+
+	var rs []*Record
+
+	for {
+		body, err := json.Marshal(resuestBody)
+		if err != nil {
+			return nil, err
+		}
+
+		body, err = repo.Client.getWithBody(APIEndpointRecordsCursor, body)
+		if err != nil {
+			return nil, err
+		}
+
+		var response struct {
+			Records []*Record `json:"records"`
+			Next    bool      `json:"next"`
+		}
+
+		err = json.Unmarshal(body, &response)
+		if err != nil {
+			return nil, err
+		}
+
+		rs = append(rs, response.Records...)
+
+		if !response.Next {
+			return rs, nil
+		}
+	}
+}
+
+func (repo *Repository) getCursor(q *Query) (*Cursor, error) {
+	if q == nil {
+		return nil, errors.New("query is required")
+	}
+
+	type requestBody struct {
+		AppID    int      `json:"app"`
+		Fields   []string `json:"fields"`
+		Conditon string   `json:"query"`
+		Size     int      `json:"size"`
+	}
+
+	request := requestBody{AppID: q.AppID, Fields: q.Fields, Conditon: q.Condition, Size: 500}
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err = repo.Client.post(APIEndpointRecordsCursor, body)
+	if err != nil {
+		return nil, err
+	}
+
+	var cursor Cursor
+
+	err = json.Unmarshal(body, &cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cursor, nil
 }
 
 //+AddRecord
@@ -591,7 +671,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 	}
 
 	q := &Query{AppID: appID, Fields: []string{keyName}, Condition: condition}
-	_rs, err := repo.readRecords(ctx, q)
+	_rs, err := repo.ReadRecordsWithCursor(q)
 	if err != nil {
 		return errors.Wrap(err, "read exist key values failed")
 	}
