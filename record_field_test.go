@@ -16,19 +16,50 @@ func TestUserField(t *testing.T) {
 	}
 }
 
-func TestDateTimeField(t *testing.T) {
-	data := []byte(`"2014-02-16T08:57:00Z"`)
-
-	var d DateTimeField
-	err := json.Unmarshal(data, &d)
-	if err != nil {
-		t.Error(err)
-		return
+func TestDateField(t *testing.T) {
+	tests := []struct {
+		Input    []byte
+		Expected string
+	}{
+		{[]byte(`"2014-02-16"`), "2014-02-16"},
+		{[]byte(`""`), ""},
 	}
 
-	expected := "2014-02-16 08:57:00"
-	actual := fmt.Sprint(d)
-	if expected != actual {
-		t.Errorf("expected: %s, actual: %s", expected, actual)
+	for _, test := range tests {
+		var d DateField
+		err := json.Unmarshal(test.Input, &d)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		actual := fmt.Sprint(d)
+		if test.Expected != actual {
+			t.Errorf("expected: %s, actual: %s", test.Expected, actual)
+		}
+	}
+}
+
+func TestDateTimeField(t *testing.T) {
+	tests := []struct {
+		Input    []byte
+		Expected string
+	}{
+		{[]byte(`"2014-02-16T08:57:00Z"`), "2014-02-16 08:57:00"},
+		{[]byte(`""`), ""},
+	}
+
+	for _, test := range tests {
+		var d DateTimeField
+		err := json.Unmarshal(test.Input, &d)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		actual := fmt.Sprint(d)
+		if test.Expected != actual {
+			t.Errorf("expected: %s, actual: %s", test.Expected, actual)
+		}
 	}
 }

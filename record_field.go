@@ -228,8 +228,15 @@ func (f *DateField) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	t, _ := time.Parse("2006-01-02", v)
+	if v == "" {
+		*f = DateField{}
+		return nil
+	}
 
+	t, err := time.Parse("2006-01-02", v)
+	if err != nil {
+		return err
+	}
 	*f = DateField{t}
 	return nil
 }
@@ -277,6 +284,11 @@ func (f *DateTimeField) UnmarshalJSON(data []byte) error {
 	err := json.Unmarshal(data, &v)
 	if err != nil {
 		return err
+	}
+
+	if v == "" {
+		*f = DateTimeField{}
+		return nil
 	}
 
 	t, err := time.Parse(time.RFC3339, v)
