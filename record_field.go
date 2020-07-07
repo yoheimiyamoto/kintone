@@ -254,10 +254,21 @@ func (f DateField) String() string {
 //+DateTimeField
 
 // DateTimeField ...
-type DateTimeField time.Time
+type DateTimeField struct {
+	Value interface{} // nil or time.Time
+}
+
+func NewDateTimeField(year, month, day, hour, min int) *DateTimeField {
+	t := DateTimeField{time.Date(year, time.Month(month), day, hour, min, 0, 0, time.UTC)}
+	return &t
+}
 
 func (f DateTimeField) String() string {
-	return time.Time(f).Format(time.RFC3339)
+	if v, ok := f.Value.(time.Time); ok {
+		return v.Format("2006-01-02 15:04:05")
+		// return v.Format(time.RFC3339)
+	}
+	return ""
 }
 
 // UnmarshalJSON ...
@@ -268,20 +279,21 @@ func (f *DateTimeField) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	t, _ := time.Parse(time.RFC3339, v)
+	t, err := time.Parse(time.RFC3339, v)
+	if err != nil {
+		return err
+	}
 
-	*f = DateTimeField(t)
+	*f = DateTimeField{t}
 	return nil
 }
 
 // MarshalJSON ...
 func (f DateTimeField) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.String())
-}
-
-func newDateTimeField(year, month, day, hour, min int) *DateTimeField {
-	t := DateTimeField(time.Date(year, time.Month(month), day, hour, min, 0, 0, time.UTC))
-	return &t
+	if f.Value != nil {
+		return json.Marshal(f.String())
+	}
+	return json.Marshal(f.Value)
 }
 
 //-DateTimeField
