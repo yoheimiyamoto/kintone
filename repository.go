@@ -1,6 +1,7 @@
 package kintone
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -741,6 +742,14 @@ func (repo *Repository) ReadFormFields(appID int) (FormFields, error) {
 	raw := struct {
 		Properties FormFields `json:"properties"`
 	}{}
+
+	var buf bytes.Buffer
+	err = json.Indent(&buf, data, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	log.Println(buf.String())
+
 	err = json.Unmarshal(data, &raw)
 	if err != nil {
 		return nil, err

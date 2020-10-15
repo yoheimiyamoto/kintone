@@ -95,15 +95,15 @@ type RelatedApp struct {
 }
 
 type Lookup struct {
-	RelatedApp         RelatedApp    `json:"relatedApp"`
-	RelatedKeyField    string        `json:"relatedKeyField"`
-	FieldMappings      FieldMappings `json:"fieldMappings"`
-	LookupPickerFields []string      `json:"lookupPickerFields"`
-	FilterCond         string        `json:"filterCond"`
-	Sort               string        `json:"sort"`
+	RelatedApp         RelatedApp      `json:"relatedApp"`
+	RelatedKeyField    string          `json:"relatedKeyField"`
+	FieldMappings      []*FieldMapping `json:"fieldMappings"`
+	LookupPickerFields []string        `json:"lookupPickerFields"`
+	FilterCond         string          `json:"filterCond"`
+	Sort               string          `json:"sort"`
 }
 
-type FieldMappings struct {
+type FieldMapping struct {
 	Field        string `json:"field"`
 	RelatedField string `json:"relatedField"`
 }
