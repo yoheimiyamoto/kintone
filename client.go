@@ -22,6 +22,8 @@ const (
 	APIEndpointFormField     = "/k/v1/app/form/fields.json"
 	APIEndpointFormLayout    = "/k/v1/app/form/layout.json"
 	APIEndpointFile          = "/k/v1/file.json"
+	APIEndpointSpace         = "/k/v1/space.json"
+	APIEndpointCreateSpace   = "/k/v1/template/space.json"
 )
 
 // Client ...

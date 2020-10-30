@@ -80,6 +80,17 @@ func TestReadWithQuery2(t *testing.T) {
 	t.Logf("%d records", len(rs))
 }
 
+func TestQuery(t *testing.T) {
+	q := Query{ID: 1}
+	actual := q.String()
+	expected := "id=1"
+	if actual != expected {
+		t.Errorf("actual: %s, expected: %s", actual, expected)
+		return
+	}
+	t.Log(q.String())
+}
+
 func TestRead500Records(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 
@@ -222,6 +233,41 @@ func TestReadFormFields(t *testing.T) {
 		return
 	}
 	t.Logf("%#v", fs["チェックボックス"].Options[0])
+}
+
+func TestReadSpace(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	s, err := repo.ReadSpace(7)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("%#v", s)
+}
+
+func TestAddSpace(t *testing.T) {
+	repo := NewRepository("rcl-trial", os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+
+	s := CreateSpace{
+		TemplateID: 1,
+		Name:       "test",
+		Members: []*CreateSpaceMember{
+			&CreateSpaceMember{
+				EntityType: "USER",
+				Code:       "test@gmail.com",
+				IsAdmin:    true,
+			},
+		},
+		IsPrivate: true,
+	}
+
+	id, err := repo.AddSpace(&s)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Log(id)
 }
 
 func TestBulkAdds(t *testing.T) {

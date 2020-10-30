@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -620,9 +621,14 @@ func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []stri
 
 //+UpsertRecords
 func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	sliced := sliceRecords(rs, 100)
 
 	eg, ctx := errgroup.WithContext(ctx)
+
 	for _, _rs := range sliced {
 		_rs := _rs
 		eg.Go(func() error {
@@ -685,6 +691,7 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		existKeys[i] = key
 	}
+	log.Printf("existKeys: %v", existKeys)
 	//-existKeys
 
 	//+新規レコードと既存レコードに分類
@@ -774,10 +781,49 @@ func (repo *Repository) ReadFormLayout(appID int) (FormLayouts, error) {
 	return raw.Layout, nil
 }
 
+func (repo *Repository) ReadSpace(spaceID int) (*Space, error) {
+	data, err := repo.Client.get(APIEndpointSpace, &Query{ID: spaceID})
+	if err != nil {
+		return nil, err
+	}
+
+	var s Space
+	err = json.Unmarshal(data, &s)
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func (repo *Repository) AddSpace(s *CreateSpace) (int, error) {
+	body, err := json.Marshal(s)
+	if err != nil {
+		return 0, err
+	}
+
+	data, err := repo.Client.post(APIEndpointCreateSpace, body)
+	if err != nil {
+		return 0, err
+	}
+
+	res := struct {
+		ID int `json:"id,string"`
+	}{}
+
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.ID, nil
+}
+
 //+query
 
 // Query ...
 type Query struct {
+	ID    int
 	AppID int
 
 	Condition string
@@ -794,9 +840,20 @@ func NewQuery(appID int) *Query {
 }
 
 func (q Query) String() string {
-	str := fmt.Sprintf("app=%d", q.AppID)
+	values := url.Values{}
 
-	//+query parameter
+	if q.AppID != 0 {
+		values.Add("app", strconv.Itoa(q.AppID))
+		// str := fmt.Sprintf("app=%d", q.AppID)
+	}
+
+	//+id
+	if q.ID != 0 {
+		values.Add("id", strconv.Itoa(q.ID))
+	}
+	//-id
+
+	//+query
 	query := q.Condition
 
 	if q.OrderBy != "" {
@@ -810,19 +867,22 @@ func (q Query) String() string {
 	}
 
 	if query != "" {
-		str = fmt.Sprintf("%s&query=%s", str, query)
+		// str = fmt.Sprintf("%s&query=%s", str, query)
+		values.Add("query", query)
 	}
-	//-query parameter
+	//-query
 
 	if q.TotalCount {
-		str = fmt.Sprintf("%s&totalCount=true", str)
+		// str = fmt.Sprintf("%s&totalCount=true", str)
+		values.Add("totalCount", "true")
 	}
 	if len(q.Fields) > 0 {
 		for _, f := range q.Fields {
-			str = fmt.Sprintf(`%s&fields=%s`, str, f)
+			// str = fmt.Sprintf(`%s&fields=%s`, str, f)
+			values.Add("fields", f)
 		}
 	}
-	return str
+	return values.Encode()
 }
 
 //-query
