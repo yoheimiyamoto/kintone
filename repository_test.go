@@ -10,10 +10,12 @@ import (
 )
 
 func TestRead(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	op := RepositoryOption{MaxRetry: 3}
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &op)
 	// q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions!!"`, Fields: []string{"レコード番号"}}
 	q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions 5"`, Fields: []string{"レコード番号"}}
-	rs, err := repo.readRecords(context.Background(), q)
+
+	rs, err := repo.ReadRecords(context.Background(), q)
 	if err != nil {
 		t.Error(err)
 		return
@@ -124,9 +126,10 @@ func TestRead500Records(t *testing.T) {
 	t.Logf("%d records", len(rs))
 }
 func TestAdd(t *testing.T) {
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	op := RepositoryOption{MaxRetry: 3}
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &op)
 	var rs []*Record
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 2; i++ {
 		rs = append(rs, &Record{Fields: Fields{
 			"グループ名":     SingleLineTextField(fmt.Sprintf("hello%d", i)),
 			"文字列__複数行_": MultiLineTextField("hello world!"),

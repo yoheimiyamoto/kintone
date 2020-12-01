@@ -16,19 +16,20 @@ import (
 )
 
 const (
-	MaxRetry      = 10
 	RetryInterval = 10 // second
 )
 
 // Repository ...
 type Repository struct {
-	Client Client
-	Token  chan struct{}
+	Client   Client
+	Token    chan struct{}
+	MaxRetry int
 }
 
 type RepositoryOption struct {
 	HTTPClient    *http.Client
 	MaxConcurrent int
+	MaxRetry      int
 }
 
 type Cursor struct {
@@ -40,17 +41,27 @@ type Cursor struct {
 func NewRepository(subdomain string, username, password string, option *RepositoryOption) *Repository {
 	var httpClient *http.Client
 	maxConcurrent := 1
+	maxRetry := 3
 
 	if option != nil {
-		httpClient = option.HTTPClient
-		maxConcurrent = option.MaxConcurrent
+		if option.HTTPClient != nil {
+			httpClient = option.HTTPClient
+		}
+
+		if option.MaxConcurrent != 0 {
+			maxConcurrent = option.MaxConcurrent
+		}
+
+		if option.MaxRetry != 0 {
+			maxRetry = option.MaxRetry
+		}
 	}
 
 	c := newClient(subdomain, username, password, httpClient)
 	token := make(chan struct{}, maxConcurrent)
 	u, _ := url.ParseRequestURI(fmt.Sprintf(APIEndpointBase, subdomain))
 	c.endpointBase = u
-	return &Repository{c, token}
+	return &Repository{c, token, maxRetry}
 }
 
 // ReadRecords ...
@@ -347,7 +358,7 @@ func (repo *Repository) addRecordsWithRetry(ctx context.Context, appID int, rs [
 		}
 
 		retryCount++
-		if retryCount > MaxRetry {
+		if retryCount > repo.MaxRetry {
 			break
 		}
 		log.Printf("retry: body: %s, err: %s", string(requestData), err.Error())
@@ -532,7 +543,7 @@ func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, r
 		}
 
 		retryCount++
-		if retryCount > MaxRetry {
+		if retryCount > repo.MaxRetry {
 			break
 		}
 		log.Printf("retry %d", retryCount)
@@ -691,7 +702,6 @@ func (repo *Repository) upsertRecords(ctx context.Context, appID int, updateKey 
 		}
 		existKeys[i] = key
 	}
-	log.Printf("existKeys: %v", existKeys)
 	//-existKeys
 
 	//+新規レコードと既存レコードに分類
