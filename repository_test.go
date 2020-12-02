@@ -12,8 +12,10 @@ import (
 func TestRead(t *testing.T) {
 	op := RepositoryOption{MaxRetry: 3}
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &op)
-	// q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions!!"`, Fields: []string{"レコード番号"}}
-	q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions 5"`, Fields: []string{"レコード番号"}}
+	repo.Client.SetBasicAuth(os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"))
+
+	q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions!!"`, Fields: []string{"レコード番号"}}
+	// q := &Query{AppID: 91, Condition: `受付番号="123"`, Fields: []string{"レコード番号"}}
 
 	rs, err := repo.ReadRecords(context.Background(), q)
 	if err != nil {
