@@ -33,15 +33,18 @@ type Client interface {
 	post(path string, body []byte) ([]byte, error)
 	put(path string, body []byte) ([]byte, error)
 	delete(path string, body []byte) ([]byte, error)
+	SetBasicAuth(username, password string)
 }
 
 // Client ...
 type client struct {
-	username     string
-	password     string
-	apiToken     string
-	endpointBase *url.URL
-	httpClient   *http.Client
+	username          string
+	password          string
+	basicAuthName     string
+	basicAuthPassword string
+	apiToken          string
+	endpointBase      *url.URL
+	httpClient        *http.Client
 }
 
 // DefaultTimeout ...
@@ -95,12 +98,16 @@ func newClient(subdomain string, username, password string, httpClient *http.Cli
 	return &c
 }
 
+func (c *client) SetBasicAuth(username, password string) {
+	c.basicAuthName = username
+	c.basicAuthPassword = password
+}
+
 func (c *client) get(path string, q *Query) ([]byte, error) {
 	url, err := newURL(c.endpointBase, path, q)
 	if err != nil {
 		return nil, err
 	}
-
 	// urlの長さが4000を超える場合は、クエリをbodyにセットしてgetする
 	if len(url) > 4000 {
 		query := q.Condition
@@ -134,7 +141,6 @@ func (c *client) get(path string, q *Query) ([]byte, error) {
 
 		return c.getWithBody(path, body)
 	}
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -206,7 +212,10 @@ func (c *client) delete(path string, body []byte) ([]byte, error) {
 
 func (c *client) do(req *http.Request) ([]byte, error) {
 	req.Header.Set("X-Cybozu-Authorization", c.apiToken)
-	req.SetBasicAuth(c.username, c.password)
+
+	if c.basicAuthName != "" && c.basicAuthPassword != "" {
+		req.SetBasicAuth(c.basicAuthName, c.basicAuthPassword)
+	}
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
