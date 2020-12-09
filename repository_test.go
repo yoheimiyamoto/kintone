@@ -11,11 +11,14 @@ import (
 
 func TestRead(t *testing.T) {
 	op := RepositoryOption{MaxRetry: 3}
-	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &op)
-	repo.Client.SetBasicAuth(os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"))
+	// repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &op)
+	// repo.Client.SetBasicAuth(os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"))
 
-	q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions!!"`, Fields: []string{"レコード番号"}}
-	// q := &Query{AppID: 91, Condition: `受付番号="123"`, Fields: []string{"レコード番号"}}
+	repo := NewRepository("rls-shinsa", "GCPkintone", "shinsa12", &op)
+	repo.Client.SetBasicAuth("Administrator", "Admin12")
+
+	// q := &Query{AppID: 1002, Condition: `value="upsert via cloud functions!!"`, Fields: []string{"レコード番号"}}
+	q := &Query{AppID: 91, Condition: `受付番号="123"`, Fields: []string{"レコード番号"}}
 
 	rs, err := repo.ReadRecords(context.Background(), q)
 	if err != nil {
@@ -127,7 +130,20 @@ func TestRead500Records(t *testing.T) {
 
 	t.Logf("%d records", len(rs))
 }
-func TestAdd(t *testing.T) {
+
+func TestAddRecord(t *testing.T) {
+	op := RepositoryOption{MaxRetry: 3}
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &op)
+	r := Record{Fields: Fields{"キー": SingleLineTextField("test")}}
+	id, err := repo.AddRecord(nil, 688, &r)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log(id)
+}
+
+func TestAddRecords(t *testing.T) {
 	op := RepositoryOption{MaxRetry: 3}
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &op)
 	var rs []*Record
@@ -180,10 +196,22 @@ func TestAddWithRetry(t *testing.T) {
 	t.Log(ids)
 }
 
-func TestUpdate(t *testing.T) {
+func TestUpdateRecord(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
+	// r := Record{Fields: Fields{"キー": SingleLineTextField("test"), "数値": NumberField(1)}}
+	r := Record{ID: "6173", Fields: Fields{"キー": SingleLineTextField("test"), "数値": NumberField(100)}}
+
+	err := repo.UpdateRecord(nil, 688, "", &r)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestUpdateRecords(t *testing.T) {
 	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), nil)
 	rs := []*Record{
-		&Record{ID: "1662", Fields: Fields{"name": SingleLineTextField("卍<>*+!~^")}},
+		{ID: "1662", Fields: Fields{"name": SingleLineTextField("卍<>*+!~^")}},
 	}
 	err := repo.UpdateRecords(nil, 670, "", rs...)
 	if err != nil {
@@ -320,6 +348,25 @@ func TestGetCursor(t *testing.T) {
 	}
 
 	t.Log(c)
+}
+
+func TestUpsertRecord(t *testing.T) {
+	repo := NewRepository(os.Getenv("KINTONE_DOMAIN"), os.Getenv("KINTONE_ID"), os.Getenv("KINTONE_PASSWORD"), &RepositoryOption{MaxConcurrent: 5})
+	// r := Record{
+	// 	ID:     "1",
+	// 	Fields: Fields{"キー": SingleLineTextField("test"), "数値": NumberField(1)},
+	// }
+	r := Record{
+		ID:     "6173000",
+		Fields: Fields{"数値": NumberField(10)},
+	}
+
+	id, err := repo.UpsertRecord(nil, 688, "", &r)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log(id)
 }
 
 func TestUpsertRecords(t *testing.T) {

@@ -272,6 +272,34 @@ func (repo *Repository) AddRecords(ctx context.Context, appID int, rs ...*Record
 	return ids, nil
 }
 
+func (repo *Repository) AddRecord(ctx context.Context, appID int, r *Record) (string, error) {
+	type requestBody struct {
+		App    int    `json:"app"`
+		Record Fields `json:"record"`
+	}
+
+	body, err := json.Marshal(requestBody{appID, r.Fields})
+	if err != nil {
+		return "", err
+	}
+
+	body, err = repo.Client.post(APIEndpointRecord, body)
+	if err != nil {
+		return "", err
+	}
+
+	var reponseBody struct {
+		ID string `json:"id"`
+	}
+
+	err = json.Unmarshal(body, &reponseBody)
+	if err != nil {
+		return "", err
+	}
+
+	return reponseBody.ID, nil
+}
+
 func (repo *Repository) addRecords(ctx context.Context, appID int, rs []*Record) ([]string, error) {
 	if len(rs) == 0 {
 		return nil, nil
@@ -382,6 +410,60 @@ func (repo *Repository) addRecordsWithRetry(ctx context.Context, appID int, rs [
 }
 
 //-AddRecord
+
+//+UpdateRecord
+func (repo *Repository) UpdateRecord(ctx context.Context, appID int, updateKey string, r *Record) error {
+	if appID == 0 {
+		return errors.New("appID is required")
+	}
+
+	if r == nil {
+		return nil
+	}
+
+	type RequestBody interface{}
+
+	type RequestBodyWithRecordID struct {
+		App    int    `json:"app"`
+		ID     string `json:"id"`
+		Fields Fields `json:"record"`
+	}
+
+	type UpdateKey struct {
+		Field string `json:"field"`
+		Value string `json:"value"`
+	}
+
+	type RequestBodyWithUpdateKey struct {
+		App       int        `json:"app"`
+		UpdateKey *UpdateKey `json:"updateKey"`
+		Fields    Fields     `json:"record"`
+	}
+
+	var requestBody RequestBody
+
+	if updateKey == "" {
+		requestBody = &RequestBodyWithRecordID{App: appID, ID: r.ID, Fields: r.Fields}
+	} else {
+		u := UpdateKey{Field: updateKey, Value: fmt.Sprint(r.Fields[updateKey])}
+		delete(r.Fields, updateKey)
+		requestBody = &RequestBodyWithUpdateKey{App: appID, UpdateKey: &u, Fields: r.Fields}
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.Client.put(APIEndpointRecord, body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//-UpdateRecord
 
 //+UpdateRecords
 
@@ -629,6 +711,54 @@ func (repo *Repository) deleteRecords(ctx context.Context, appID int, ids []stri
 }
 
 //-DeleteRecords
+
+//+UpsertRecord
+func (repo *Repository) UpsertRecord(ctx context.Context, appID int, updateKey string, r *Record) (string, error) {
+	if appID == 0 {
+		return "", errors.New("appID is required")
+	}
+
+	if r == nil {
+		return "", nil
+	}
+
+	//+既存レコードが存在するか確認
+	var keyName string
+	var keyValue string
+
+	switch updateKey {
+	case "":
+		keyName = "レコード番号"
+		keyValue = r.ID
+	default:
+		keyName = updateKey
+		if r.Fields[updateKey] == nil {
+			return "", errors.New("キーがレコードに存在しません")
+		}
+		keyValue = fmt.Sprint(r.Fields[updateKey])
+	}
+
+	condition := fmt.Sprintf(`%s="%s"`, keyName, keyValue)
+
+	q := &Query{AppID: appID, Fields: []string{keyName}, Condition: condition}
+	_rs, err := repo.ReadRecordsWithCursor(q)
+	if err != nil {
+		return "", errors.Wrap(err, "read exist key values failed")
+	}
+	//-既存レコードが存在するか確認
+
+	switch len(_rs) {
+	case 0:
+		return repo.AddRecord(ctx, appID, r)
+	case 1:
+		err = repo.UpdateRecord(ctx, appID, updateKey, r)
+		return r.ID, err
+	default:
+		return "", errors.New("Upsertのキーが複数存在します")
+	}
+}
+
+//-UpsertRecord
 
 //+UpsertRecords
 func (repo *Repository) UpsertRecords(ctx context.Context, appID int, updateKey string, rs ...*Record) error {
