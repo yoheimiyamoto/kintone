@@ -389,7 +389,7 @@ func (repo *Repository) addRecordsWithRetry(ctx context.Context, appID int, rs [
 		if retryCount > repo.MaxRetry {
 			break
 		}
-		log.Printf("retry: body: %s, err: %s", string(requestData), err.Error())
+		// log.Printf("retry: body: %s, err: %s", string(requestData), err.Error())
 		time.Sleep(time.Second * RetryInterval)
 	}
 
@@ -628,7 +628,7 @@ func (repo *Repository) updateRecordsWithRetry(ctx context.Context, appID int, r
 		if retryCount > repo.MaxRetry {
 			break
 		}
-		log.Printf("retry %d", retryCount)
+		// log.Printf("retry %d", retryCount)
 		time.Sleep(time.Second * RetryInterval)
 	}
 
